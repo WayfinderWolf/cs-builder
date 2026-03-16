@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration Specification Builder — CC2026-013</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --ink:#1a1a2e; --ink-soft:#4a4a6a; --ink-muted:#8888aa;
+  --surface:#f8f7f5; --surface-2:#f0ede8; --surface-3:#e8e3dc;
+  --accent:#5c3d8f; --accent-light:#ede8f5; --accent-mid:#9b7cc8;
+  --green:#2d6a4f; --green-light:#e8f5ee; --green-dark:#1a4a33;
+  --amber:#92400e; --amber-light:#fef3c7;
+  --blue-light:#d6e4f0; --blue-dark:#1a3a5c;
+  --red:#991b1b; --red-light:#fee2e2;
+  --border:#d8d2ca; --border-soft:#ece8e2;
+  --mono:'DM Mono',monospace; --sans:'DM Sans',sans-serif;
+  --r:8px; --rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--surface);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.6;}
+
+/* Header */
+.hdr{background:var(--ink);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.logo{width:28px;height:28px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:500;color:white;}
+.hdr-title{font-size:13px;font-weight:500;color:rgba(255,255,255,.9);}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.4);font-family:var(--mono);}
+.doc-id{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.35);background:rgba(255,255,255,.06);padding:3px 9px;border-radius:4px;}
+
+/* Progress */
+.prog-wrap{background:var(--surface-2);border-bottom:1px solid var(--border-soft);padding:0 28px;}
+.prog{display:flex;max-width:880px;}
+.prog-step{flex:1;padding:10px 0;font-size:10px;font-weight:600;color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-align:center;letter-spacing:.05em;text-transform:uppercase;user-select:none;}
+.prog-step.active{color:var(--accent);border-bottom-color:var(--accent);}
+.prog-step.done{color:var(--green);border-bottom-color:var(--green);}
+.prog-step:hover{color:var(--ink);}
+
+/* Type chooser */
+.type-chooser{max-width:880px;margin:0 auto;padding:40px 28px;}
+.chooser-title{font-size:22px;font-weight:600;margin-bottom:8px;}
+.chooser-sub{font-size:14px;color:var(--ink-muted);margin-bottom:32px;}
+.type-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.type-card{border:2px solid var(--border);border-radius:var(--rl);padding:28px 24px;cursor:pointer;transition:all .2s;background:white;}
+.type-card:hover{border-color:var(--accent-mid);background:var(--accent-light);box-shadow:0 4px 16px rgba(92,61,143,.1);}
+.type-card.selected{border-color:var(--accent);background:var(--accent-light);}
+.type-icon{font-size:32px;margin-bottom:12px;}
+.type-label{font-size:16px;font-weight:600;margin-bottom:6px;}
+.type-desc{font-size:12px;color:var(--ink-muted);line-height:1.5;}
+.type-docs{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;}
+.type-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--surface-2);color:var(--ink-soft);}
+
+/* Main */
+.main{max-width:880px;margin:0 auto;padding:24px 28px;}
+
+/* Panels */
+.panel{background:white;border:1px solid var(--border-soft);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;display:none;}
+.panel.active{display:block;}
+.ph{padding:16px 20px 12px;border-bottom:1px solid var(--border-soft);display:flex;align-items:flex-start;gap:10px;}
+.pnum{width:24px;height:24px;min-width:24px;background:var(--accent-light);color:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:500;}
+.ptitle{font-size:14px;font-weight:600;margin-bottom:2px;}
+.pdesc{font-size:11px;color:var(--ink-muted);}
+.pb{padding:20px;}
+
+/* Fields */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fg3{grid-template-columns:1fr 1fr 1fr;}
+.fg1{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.lbl{font-size:10px;font-weight:600;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase;}
+.req{color:var(--accent);margin-left:2px;}
+input[type=text],input[type=date],select,textarea{font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;outline:none;transition:border-color .15s,background .15s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-mid);background:white;box-shadow:0 0 0 3px rgba(92,61,143,.08);}
+textarea{resize:vertical;min-height:68px;}
+
+/* Cards (steps & settings) */
+.cards{display:flex;flex-direction:column;gap:9px;}
+.card{border:1px solid var(--border-soft);border-radius:var(--rl);overflow:hidden;transition:box-shadow .2s;}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.card-hdr{padding:11px 14px;background:var(--surface-2);display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;}
+.card-hdr:hover{background:var(--surface-3);}
+.card-num{width:22px;height:22px;min-width:22px;background:var(--accent);color:white;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:500;}
+.card-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;}
+.b-t1{background:var(--green-light);color:var(--green);}
+.b-t2{background:var(--accent-light);color:var(--accent);}
+.b-all{background:var(--surface-3);color:var(--ink-soft);}
+.b-rr{background:var(--blue-light);color:var(--blue-dark);}
+.b-adm{background:var(--surface-3);color:var(--ink-soft);}
+.card-preview{flex:1;font-size:12px;font-weight:500;}
+.card-preview.ph-txt{color:var(--ink-muted);font-style:italic;}
+.expand-icon{color:var(--ink-muted);font-size:10px;transition:transform .2s;}
+.card.open .expand-icon{transform:rotate(180deg);}
+.card-body{padding:16px 14px;border-top:1px solid var(--border-soft);display:none;}
+.card.open .card-body{display:block;}
+.card-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end;}
+
+/* Add button */
+.add-btn{display:flex;align-items:center;gap:7px;padding:10px 16px;border:1.5px dashed var(--border);border-radius:var(--rl);background:transparent;color:var(--ink-muted);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;width:100%;justify-content:center;transition:all .15s;margin-top:4px;}
+.add-btn:hover{border-color:var(--accent-mid);color:var(--accent);background:var(--accent-light);}
+
+/* Buttons */
+.btn{font-family:var(--sans);font-size:12px;font-weight:500;padding:6px 14px;border-radius:var(--r);cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.btn-primary{background:var(--accent);color:white;}
+.btn-primary:hover{background:#4a2d7a;}
+.btn-secondary{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--surface-3);}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid #fca5a5;font-size:10px;padding:3px 8px;}
+.btn-ghost{background:transparent;color:var(--ink-muted);border:1px solid var(--border-soft);font-size:10px;padding:3px 8px;}
+.btn-ghost:hover{background:var(--surface-2);}
+
+/* Nav */
+.pnav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--border-soft);background:var(--surface);}
+
+/* Export */
+.exp-hdr{background:var(--ink);padding:20px;color:white;}
+.exp-hdr h2{font-size:16px;font-weight:600;margin-bottom:3px;}
+.exp-hdr p{font-size:11px;color:rgba(255,255,255,.4);}
+.exp-body{padding:20px;}
+.exp-summary{background:var(--surface-2);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+.es-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);font-weight:600;margin-bottom:3px;}
+.es-val{font-size:15px;font-weight:600;font-family:var(--mono);}
+.exp-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.exp-opt{flex:1;min-width:160px;border:1px solid var(--border);border-radius:var(--rl);padding:16px;cursor:pointer;transition:all .2s;text-align:center;}
+.exp-opt:hover{border-color:var(--accent-mid);background:var(--accent-light);box-shadow:0 2px 10px rgba(92,61,143,.1);}
+.exp-opt-icon{font-size:24px;margin-bottom:6px;}
+.exp-opt-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.exp-opt-desc{font-size:10px;color:var(--ink-muted);}
+
+/* Loading */
+.overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,.55);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.overlay.active{display:flex;}
+.ov-box{background:white;border-radius:var(--rl);padding:26px 34px;text-align:center;max-width:280px;}
+.spinner{width:32px;height:32px;border:3px solid var(--surface-3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Rationale */
+.rat-custom{display:none;}
+.rat-custom.visible{display:block;margin-top:5px;}
+.divider{border:none;border-top:1px solid var(--border-soft);margin:12px 0;}
+.notice{padding:8px 12px;border-radius:var(--r);font-size:11px;margin-bottom:12px;}
+.ni{background:var(--accent-light);color:var(--accent);border:1px solid #c4b5e8;}
+.ne{background:var(--red-light);color:var(--red);border:1px solid #fca5a5;}
+.hidden{display:none;}
+
+/* Counter status */
+.docnum-wrap { position: relative; }
+.docnum-status {
+  font-size: 10px; margin-top: 3px; display: flex; align-items: center; gap: 5px;
+}
+.docnum-status .pill {
+  font-size: 9px; font-weight: 600; padding: 1px 7px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.pill-auto { background: var(--green-light); color: var(--green); }
+.pill-manual { background: var(--amber-light); color: var(--amber); }
+.pill-locked { background: var(--blue-light); color: var(--blue-dark); }
+.docnum-status .status-text { font-size: 10px; color: var(--ink-muted); }
+.counter-admin {
+  margin-top: 14px; padding: 10px 14px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  border-radius: var(--r); font-size: 12px;
+}
+.counter-admin summary {
+  cursor: pointer; font-weight: 600; color: var(--ink-soft);
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  user-select: none;
+}
+.counter-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.counter-item {
+  background: white; border: 1px solid var(--border-soft);
+  border-radius: var(--r); padding: 8px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px;
+}
+.counter-item-prefix { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+.counter-item-num { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+.counter-reset-btn {
+  font-size: 9px; color: var(--red); background: none; border: none;
+  cursor: pointer; padding: 0 4px; opacity: .6;
+}
+.counter-reset-btn:hover { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">CS</div>
+    <div>
+      <div class="hdr-title">Configuration Specification Builder</div>
+      <div class="hdr-sub">CC2026-013 — MasterControl CSA Transition</div>
+    </div>
+  </div>
+  <div class="doc-id" id="headerDocId">Select type to begin</div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog">
+    <div class="prog-step active" onclick="goTo(0)">1 · Type</div>
+    <div class="prog-step" onclick="goTo(1)">2 · Header</div>
+    <div class="prog-step" onclick="goTo(2)">3 · Intended Use</div>
+    <div class="prog-step" id="step4label" onclick="goTo(3)">4 · Config</div>
+    <div class="prog-step" onclick="goTo(4)">5 · Export</div>
+  </div>
+</div>
+
+<!-- ── STEP 0: TYPE CHOOSER ───────────────────────────────────────────────── -->
+<div id="sec-0" style="display:block">
+<div class="type-chooser">
+  <div class="chooser-title">What type of Configuration Specification?</div>
+  <div class="chooser-sub">Choose the type — the form will adapt to show the right fields. Both types generate a Config Spec and a paired IUV Package.</div>
+  <div class="type-cards">
+    <div class="type-card" id="card-module" onclick="selectType('module')">
+      <div class="type-icon">🗂️</div>
+      <div class="type-label">Module Configuration Spec</div>
+      <div class="type-desc">For a MasterControl module (Documents, Training, AQEM, Supplier, etc.). Documents configuration settings as a table — each setting with its value, risk classification, and business rationale.</div>
+      <div class="type-docs">
+        <span class="type-badge">Config Settings Table</span>
+        <span class="type-badge">Risk Classification</span>
+        <span class="type-badge">IUV Required flags</span>
+      </div>
+    </div>
+    <div class="type-card" id="card-workflow" onclick="selectType('workflow')">
+      <div class="type-icon">🔀</div>
+      <div class="type-label">Workflow Configuration Spec</div>
+      <div class="type-desc">For a configured workflow within a module (DCR with Training, CAPA workflow, etc.). Documents each workflow step with step type, assignment, reassign authority, and GxP rationale.</div>
+      <div class="type-docs">
+        <span class="type-badge">Step Map</span>
+        <span class="type-badge">Branch Logic</span>
+        <span class="type-badge">GxP Rationale</span>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:24px;text-align:right">
+    <button class="btn btn-primary" onclick="confirmType()" id="typeNextBtn" style="opacity:.4;pointer-events:none">Continue →</button>
+  </div>
+</div>
+</div>
+
+<!-- ── STEP 1: HEADER ─────────────────────────────────────────────────────── -->
+<div class="main" id="sec-1" style="display:none">
+<div class="panel active">
+  <div class="ph"><div class="pnum">2</div><div><div class="ptitle">Document Header</div><div class="pdesc">Core metadata for both the Config Spec and the IUV Package</div></div></div>
+  <div class="pb">
+    <div class="fg fg3">
+      <div class="field">
+  <label class="lbl">Document # <span class="req">*</span></label>
+  <div class="docnum-wrap">
+    <input type="text" id="docNum" placeholder="Loading..." oninput="onDocNumInput()">
+  </div>
+  <div class="docnum-status" id="docNumStatus">
+    <span class="pill pill-auto">Auto</span>
+    <span class="status-text" id="docNumStatusText">Will lock when you proceed to Intended Use</span>
+  </div>
+</div>
+      <div class="field"><label class="lbl">Revision</label><input type="text" id="revision" value="1.0"></div>
+      <div class="field"><label class="lbl">Effective Date</label><input type="date" id="effectiveDate"></div>
+    </div>
+    <div class="fg">
+      <div class="field"><label class="lbl">System <span class="req">*</span></label><input type="text" id="system" value="MasterControl"></div>
+      <div class="field"><label class="lbl">Module <span class="req">*</span></label>
+        <select id="module"><option value="">— Select —</option><option>Documents</option><option>Training</option><option>AQEM</option><option>Supplier</option><option>Audit</option><option>Risk</option><option>Production Records</option><option>System / Security</option></select>
+      </div>
+    </div>
+    <div class="fg" id="wfNameRow" style="display:none">
+      <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
+      <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
+        <select id="site"><option value="">— Select —</option><option>Corporate</option><option>Manufacturing</option><option>Fulfillment</option><option>Brazil</option><option>Ireland</option><option>All Sites</option></select>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="field"><label class="lbl">IUV Package # <span class="req">*</span></label><input type="text" id="iuvPackage" placeholder="IUV-DOC-001"></div>
+      <div class="field"><label class="lbl">Related Validation Plan</label><input type="text" id="valPlan" value="PLAN-0028 MasterControl CSA Validation Plan"></div>
+    </div>
+    <div class="fg">
+      <div class="field"><label class="lbl">Author</label><input type="text" id="author" placeholder="Casey Wolf"></div>
+      <div class="field"><label class="lbl">GxP Classification</label>
+        <select id="gxpClass"><option>GxP — Risk-Relevant Module</option><option>GxP — Risk-Relevant Workflow</option><option>Administrative — No GxP Impact</option></select>
+      </div>
+    </div>
+  </div>
+  <details class="counter-admin">
+  <summary>Document Number Counters</summary>
+  <div class="counter-grid" id="counterGrid">Loading...</div>
+  <div style="margin-top:8px;font-size:10px;color:var(--ink-muted)">Counters are shared across all users. Numbers lock when each user proceeds past this step.</div>
+</details>
+<div class="pnav"><button class="btn btn-secondary" onclick="goTo(0)">← Back</button><button class="btn btn-primary" onclick="lockAndProceed()">Next: Intended Use →</button></div>
+</div>
+</div>
+
+<!-- ── STEP 2: INTENDED USE ───────────────────────────────────────────────── -->
+<div class="main" id="sec-2" style="display:none">
+<div class="panel active">
+  <div class="ph"><div class="pnum">3</div><div><div class="ptitle">Intended Use Statement</div><div class="pdesc">Describe what this configuration is designed to do from a GxP business purpose perspective</div></div></div>
+  <div class="pb">
+    <div class="notice ni">Write from the perspective of what the business needs the system to do — not how it is technically configured. Auditors read this first.</div>
+    <div class="field" style="margin-bottom:12px"><label class="lbl">Intended Use Statement <span class="req">*</span></label>
+      <textarea id="intendedUse" rows="5" placeholder="This module / workflow is configured to..."></textarea>
+    </div>
+    <div class="field" style="margin-bottom:12px"><label class="lbl">E-Signature Note</label>
+      <textarea id="esigNote" rows="2">E-signature (approve/reject dropdown, no configured meaning statement) is required at all steps as a system-wide module setting. E-sig is spot-checked at Steps 1 and 5 in IUV only.</textarea>
+    </div>
+    <hr class="divider">
+    <div class="fg fg3">
+      <div class="field"><label class="lbl">21 CFR Part 11 / Annex 11</label>
+        <select id="partEleven"><option>Applicable</option><option>Not Applicable</option><option>Partially Applicable</option></select>
+      </div>
+      <div class="field"><label class="lbl">Supersedes</label><input type="text" id="supersedes" value="N/A — Initial Release"></div>
+      <div class="field"><label class="lbl">Related IUV Package</label><input type="text" id="iuvRef2" placeholder="IUV-DOC-001"></div>
+    </div>
+  </div>
+  <div class="pnav"><button class="btn btn-secondary" onclick="goTo(1)">← Back</button><button class="btn btn-primary" onclick="goTo(3)">Next: Configuration →</button></div>
+</div>
+</div>
+
+<!-- ── STEP 3: CONFIG (MODULE or WORKFLOW) ────────────────────────────────── -->
+<div class="main" id="sec-3" style="display:none">
+
+  <!-- MODULE settings -->
+  <div id="moduleSection">
+  <div class="panel active">
+    <div class="ph"><div class="pnum">4</div><div><div class="ptitle">Configuration Settings</div><div class="pdesc">Add each configuration setting. Click a card to expand and edit its details.</div></div></div>
+    <div class="pb">
+      <div id="settingsContainer" class="cards"></div>
+      <button class="add-btn" onclick="addSetting()"><span style="font-size:16px;line-height:1">+</span> Add Configuration Setting</button>
+    </div>
+    <div class="pnav"><button class="btn btn-secondary" onclick="goTo(2)">← Back</button><button class="btn btn-primary" onclick="goTo(4)">Next: Export →</button></div>
+  </div>
+  </div>
+
+  <!-- WORKFLOW steps -->
+  <div id="workflowSection" style="display:none">
+  <div class="panel active">
+    <div class="ph"><div class="pnum">4</div><div><div class="ptitle">Workflow Step Map</div><div class="pdesc">Add each workflow step. Click a card to expand and edit its details.</div></div></div>
+    <div class="pb">
+      <div id="stepsContainer" class="cards"></div>
+      <button class="add-btn" onclick="addStep()"><span style="font-size:16px;line-height:1">+</span> Add Workflow Step</button>
+    </div>
+    <div class="pnav"><button class="btn btn-secondary" onclick="goTo(2)">← Back</button><button class="btn btn-primary" onclick="goTo(4)">Next: Export →</button></div>
+  </div>
+  </div>
+
+</div>
+
+<!-- ── STEP 4: EXPORT ─────────────────────────────────────────────────────── -->
+<div class="main" id="sec-4" style="display:none">
+<div class="panel active" style="overflow:visible">
+  <div class="exp-hdr"><h2>Ready to Export</h2><p>Both documents will be generated from your entries — no manual formatting required</p></div>
+  <div class="exp-body">
+    <div class="exp-summary" id="expSummary"></div>
+    <div id="expNotice" class="notice ne hidden">Complete all required fields and add at least one configuration entry before exporting.</div>
+    <div class="exp-actions">
+      <div class="exp-opt" onclick="exportBoth()">
+        <div class="exp-opt-icon">📦</div>
+        <div class="exp-opt-title">Export Both Documents</div>
+        <div class="exp-opt-desc">Downloads Config Spec + IUV Package as two .docx files</div>
+      </div>
+      <div class="exp-opt" onclick="exportJSON()">
+        <div class="exp-opt-icon">💾</div>
+        <div class="exp-opt-title">Save Form Data</div>
+        <div class="exp-opt-desc">Save your entries as JSON to reload later</div>
+      </div>
+    </div>
+    <hr class="divider" style="margin-top:20px">
+    <div style="margin-top:12px">
+      <label class="lbl" style="display:block;margin-bottom:6px">Load previously saved form data</label>
+      <input type="file" id="loadFile" accept=".json" onchange="loadJSON(event)" style="font-size:11px;color:var(--ink-muted)">
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Loading overlay -->
+<div class="overlay" id="overlay">
+  <div class="ov-box">
+    <div class="spinner"></div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:4px">Building Documents</div>
+    <div style="font-size:11px;color:var(--ink-muted);font-family:var(--mono)" id="ovStatus">Generating config spec...</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let docType = null; // 'module' | 'workflow'
+let settings = [], steps = [];
+let sc = 0, stc = 0; // counters
+
+// ── Presets ────────────────────────────────────────────────────────────────
+const RATIONALE_PRESETS = [
+  {v:"",l:"— Select common rationale —"},
+  {v:"CR role scoped to site and department prevents unauthorized initiation. Mandatory fields must be completed before the step can advance.",l:"CR role enforcement — prevents unauthorized initiation"},
+  {v:"Originator as Collaboration Leader must sign off. Additional reviewers optional. Controls peer review gate before routing to approval steps.",l:"Collaboration Leader gate — peer review control"},
+  {v:"Doc Control receives and may reassign within the Doc Control role. Formatting and completeness review before department approval.",l:"Doc Control formatting review"},
+  {v:"Routing authority limited to Originator and Doc Control — prevents unauthorized reassignment to an unqualified approver.",l:"Department approval — restricted routing authority"},
+  {v:"QA Approver role required. Primary GxP control point — no document becomes effective without QA sign-off.",l:"QA Approval — primary GxP control point"},
+  {v:"Confirms training has been assigned before effective date is set. Verifies assignment, not completion.",l:"Training verification — assignment confirmed before effectivity"},
+  {v:"Final Approval step — triggers system-set effective date automatically upon e-signature. Effectivity is system-driven, not manually entered.",l:"Final Approval — system-set effective date"},
+  {v:"Mandatory AQEM Final Approval step. Assigned to Lead SA for all paths. Provides Lead SA visibility and sign-off on every change regardless of tier.",l:"Final Approval — Lead SA mandatory visibility"},
+  {v:"Notification step only. Not GxP-critical. Included for completeness.",l:"Notification — not GxP-critical"},
+  {v:"custom",l:"✏️  Write custom rationale..."},
+];
+
+const SETTING_RATIONALE_PRESETS = [
+  {v:"",l:"— Select common rationale —"},
+  {v:"Ensures only authorized document categories can be initiated; prevents uncontrolled document types entering the QMS.",l:"Document type control — prevents unauthorized initiation"},
+  {v:"Mandatory metadata ensures every record is attributable, traceable, and retrievable for regulatory inspection.",l:"Mandatory metadata — attribution and traceability"},
+  {v:"Consistent numbering prevents duplicate IDs and supports audit trail completeness.",l:"Document numbering — audit trail integrity"},
+  {v:"Restricts creation or modification to trained, authorized personnel only.",l:"Role restriction — authorized personnel only"},
+  {v:"QA approval authority is a GxP compliance requirement. Ensures no record is released without quality oversight.",l:"QA approval required — GxP compliance"},
+  {v:"Satisfies 21 CFR Part 11 §11.50 signature requirements for records created, modified, or transmitted under FDA requirements.",l:"E-signature — 21 CFR Part 11 §11.50 compliance"},
+  {v:"Sequential routing ensures each reviewer sees prior feedback and prevents conflicting simultaneous edits.",l:"Sequential routing — prevents conflicting edits"},
+  {v:"Automated trigger prevents records from lapsing without review, maintaining document control compliance.",l:"Automated review trigger — prevents lapsed records"},
+  {v:"Cosmetic setting; no GxP impact.",l:"Administrative — no GxP impact"},
+  {v:"custom",l:"✏️  Write custom rationale..."},
+];
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function goTo(idx) {
+  for(let i=0;i<5;i++){
+    const s=document.getElementById('sec-'+i);
+    if(s) s.style.display='none';
+  }
+  document.getElementById('sec-'+idx).style.display='block';
+  document.querySelectorAll('.prog-step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i<idx) s.classList.add('done');
+    if(i===idx) s.classList.add('active');
+  });
+  if(idx===4) buildExpSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateDocId() {
+  document.getElementById('headerDocId').textContent = document.getElementById('docNum').value || '???';
+}
+
+// ── Type selection ──────────────────────────────────────────────────────────
+function selectType(type) {
+  docType = type;
+  document.getElementById('card-module').classList.toggle('selected', type==='module');
+  document.getElementById('card-workflow').classList.toggle('selected', type==='workflow');
+  const btn = document.getElementById('typeNextBtn');
+  btn.style.opacity='1'; btn.style.pointerEvents='auto';
+}
+
+function confirmType() {
+  if(!docType) return;
+  // Show/hide workflow-specific fields
+  document.getElementById('wfNameRow').style.display = docType==='workflow' ? 'grid' : 'none';
+  // Show correct config section
+  document.getElementById('moduleSection').style.display = docType==='module' ? 'block' : 'none';
+  document.getElementById('workflowSection').style.display = docType==='workflow' ? 'block' : 'none';
+  // Update step 4 label
+  document.getElementById('step4label').textContent = docType==='module' ? '4 · Settings' : '4 · Steps';
+  // Update GxP class default
+  document.getElementById('gxpClass').value = docType==='module' ? 'GxP — Risk-Relevant Module' : 'GxP — Risk-Relevant Workflow';
+  goTo(1);
+}
+
+// ── Settings (module) ──────────────────────────────────────────────────────
+function addSetting(data) {
+  const id=++sc;
+  const s=data||{id,num:settings.length+1,name:'',value:'',riskClass:'Risk-Relevant',ratPreset:'',ratCustom:'',iuvReq:'Yes'};
+  if(!data) s.id=id;
+  settings.push(s);
+  renderSetting(s);
+}
+
+function renderSetting(s) {
+  const c=document.getElementById('settingsContainer');
+  const div=document.createElement('div');
+  div.className='card'; div.id='scard-'+s.id;
+  const isRR=s.riskClass==='Risk-Relevant';
+  const badgeClass=isRR?'b-rr':'b-adm';
+  const badgeText=isRR?'Risk-Relevant':'Administrative';
+  const ratOpts=SETTING_RATIONALE_PRESETS.map(r=>`<option value="${r.v}"${s.ratPreset===r.v?' selected':''}>${r.l}</option>`).join('');
+  const showCustom=s.ratPreset==='custom'||(s.ratCustom&&!SETTING_RATIONALE_PRESETS.find(r=>r.v===s.ratPreset&&r.v!==''));
+  div.innerHTML=`
+    <div class="card-hdr" onclick="toggleCard('scard-${s.id}')">
+      <div class="card-num">${s.num}</div>
+      <span class="card-badge ${badgeClass}" id="sbadge-${s.id}">${badgeText}</span>
+      <div class="card-preview${s.name?'':' ph-txt'}" id="sprev-${s.id}">${s.name||'Click to add setting details'}</div>
+      <div class="expand-icon">▼</div>
+    </div>
+    <div class="card-body">
+      <div class="fg">
+        <div class="field"><label class="lbl">Setting Name <span class="req">*</span></label>
+          <input type="text" value="${s.name}" placeholder="e.g. Document Type Configuration" oninput="updS(${s.id},'name',this.value);updSPrev(${s.id})"></div>
+        <div class="field"><label class="lbl">Configured Value <span class="req">*</span></label>
+          <input type="text" value="${s.value}" placeholder="e.g. SOP, Policy, Work Instruction, Form" oninput="updS(${s.id},'value',this.value)"></div>
+      </div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Risk Classification</label>
+          <select onchange="updS(${s.id},'riskClass',this.value);updSBadge(${s.id})">
+            <option value="Risk-Relevant"${s.riskClass==='Risk-Relevant'?' selected':''}>Risk-Relevant</option>
+            <option value="Administrative"${s.riskClass==='Administrative'?' selected':''}>Administrative</option>
+          </select></div>
+        <div class="field"><label class="lbl">IUV Required</label>
+          <select onchange="updS(${s.id},'iuvReq',this.value)">
+            <option value="Yes"${s.iuvReq==='Yes'?' selected':''}>Yes</option>
+            <option value="No"${s.iuvReq==='No'?' selected':''}>No</option>
+            <option value="N/A"${s.iuvReq==='N/A'?' selected':''}>N/A</option>
+          </select></div>
+        <div class="field"><label class="lbl">Display Number</label>
+          <input type="text" value="${s.num}" oninput="updS(${s.id},'num',this.value)"></div>
+      </div>
+      <div class="field"><label class="lbl">Business Rationale <span class="req">*</span></label>
+        <div>
+          <select onchange="updSRat(${s.id},this.value)">${ratOpts}</select>
+          <textarea class="rat-custom${showCustom?' visible':''}" id="srat-${s.id}"
+            placeholder="Describe why this configuration is needed from a GxP perspective..."
+            oninput="updS(${s.id},'ratCustom',this.value)">${s.ratCustom}</textarea>
+        </div></div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" onclick="moveS(${s.id},-1)">↑</button>
+        <button class="btn btn-ghost" onclick="moveS(${s.id},1)">↓</button>
+        <button class="btn btn-danger" onclick="removeS(${s.id})">Remove</button>
+      </div>
+    </div>`;
+  c.appendChild(div);
+  div.classList.add('open');
+}
+
+function updS(id,f,v){const s=settings.find(x=>x.id===id);if(s)s[f]=v;}
+function updSPrev(id){const s=settings.find(x=>x.id===id),el=document.getElementById('sprev-'+id);if(el&&s){el.textContent=s.name||'Click to add setting details';el.className='card-preview'+(s.name?'':' ph-txt');}}
+function updSBadge(id){const s=settings.find(x=>x.id===id),b=document.getElementById('sbadge-'+id);if(b&&s){const rr=s.riskClass==='Risk-Relevant';b.className='card-badge '+(rr?'b-rr':'b-adm');b.textContent=rr?'Risk-Relevant':'Administrative';}}
+function updSRat(id,v){const s=settings.find(x=>x.id===id);if(s)s.ratPreset=v;const cf=document.getElementById('srat-'+id);if(cf){if(v==='custom'||v===''){cf.classList.add('visible');}else{cf.classList.remove('visible');if(s)s.ratCustom='';}}}
+function getSRat(s){if(s.ratPreset==='custom'||s.ratPreset==='')return s.ratCustom;return s.ratPreset;}
+function moveS(id,dir){const idx=settings.findIndex(s=>s.id===id),ni=idx+dir;if(ni<0||ni>=settings.length)return;[settings[idx],settings[ni]]=[settings[ni],settings[idx]];const c=document.getElementById('settingsContainer');c.innerHTML='';const sv=[...settings];settings=[];sc=0;sv.forEach(s=>addSetting(s));}
+function removeS(id){if(!confirm('Remove this setting?'))return;settings=settings.filter(s=>s.id!==id);const el=document.getElementById('scard-'+id);if(el)el.remove();}
+
+// ── Steps (workflow) ────────────────────────────────────────────────────────
+function addStep(data) {
+  const id=++stc;
+  const s=data||{id,num:steps.length+1,name:'',branch:'both',assignedTo:'',reassignAuth:'',stepType:'',eSig:'Yes',ratPreset:'',ratCustom:'',iuvRef:'',adminNote:''};
+  if(!data) s.id=id;
+  steps.push(s);
+  renderStep(s);
+}
+
+function renderStep(s) {
+  const c=document.getElementById('stepsContainer');
+  const div=document.createElement('div');
+  div.className='card'; div.id='wcard-'+s.id;
+  const bl=s.branch==='tier1'?'<span class="card-badge b-t1">Tier 1</span>':s.branch==='tier2'?'<span class="card-badge b-t2">Tier 2</span>':'<span class="card-badge b-all">All paths</span>';
+  const ratOpts=RATIONALE_PRESETS.map(r=>`<option value="${r.v}"${s.ratPreset===r.v?' selected':''}>${r.l}</option>`).join('');
+  const showCustom=s.ratPreset==='custom'||(s.ratCustom&&!RATIONALE_PRESETS.find(r=>r.v===s.ratPreset&&r.v!==''));
+  div.innerHTML=`
+    <div class="card-hdr" onclick="toggleCard('wcard-${s.id}')">
+      <div class="card-num">${s.num}</div>${bl}
+      <div class="card-preview${s.name?'':' ph-txt'}" id="wprev-${s.id}">${s.name||'Click to edit step details'}</div>
+      <div class="expand-icon">▼</div>
+    </div>
+    <div class="card-body">
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Step Name <span class="req">*</span></label>
+          <input type="text" value="${s.name}" placeholder="e.g. Quality Approval" oninput="updW(${s.id},'name',this.value);updWPrev(${s.id})"></div>
+        <div class="field"><label class="lbl">Step Type <span class="req">*</span></label>
+          <select onchange="updW(${s.id},'stepType',this.value)">
+            <option value="">— Select —</option>
+            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
+          </select></div>
+        <div class="field"><label class="lbl">Branch</label>
+          <select onchange="updW(${s.id},'branch',this.value);updWBadge(${s.id})">
+            <option value="both"${s.branch==='both'?' selected':''}>All paths</option>
+            <option value="tier1"${s.branch==='tier1'?' selected':''}>Tier 1 only</option>
+            <option value="tier2"${s.branch==='tier2'?' selected':''}>Tier 2 only</option>
+          </select></div>
+      </div>
+      <div class="fg">
+        <div class="field"><label class="lbl">Assigned To</label>
+          <input type="text" value="${s.assignedTo}" oninput="updW(${s.id},'assignedTo',this.value)"></div>
+        <div class="field"><label class="lbl">Reassign Authority</label>
+          <select onchange="updW(${s.id},'reassignAuth',this.value)">
+            <option value="">— Select —</option>
+            ${['None','Site Admin','Lead SA','Lead SA + Site Admin','Doc Control','QA Approver','System Owner','Originator','Originator, Doc Control','Training Coord./Admin, Doc Control'].map(r=>`<option value="${r}"${s.reassignAuth===r?' selected':''}>${r}</option>`).join('')}
+          </select></div>
+      </div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">E-Signature</label>
+          <select onchange="updW(${s.id},'eSig',this.value)">${['Yes','N/A'].map(v=>`<option${s.eSig===v?' selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label class="lbl">IUV Reference</label>
+          <input type="text" value="${s.iuvRef}" placeholder="Step 1.1 or N/A" oninput="updW(${s.id},'iuvRef',this.value)"></div>
+        <div class="field"><label class="lbl">Display Number</label>
+          <input type="text" value="${s.num}" oninput="updW(${s.id},'num',this.value)"></div>
+      </div>
+      <div class="field"><label class="lbl">GxP Rationale <span class="req">*</span></label>
+        <select onchange="updWRat(${s.id},this.value)">${ratOpts}</select>
+        <textarea class="rat-custom${showCustom?' visible':''}" id="wrat-${s.id}"
+          placeholder="Write the GxP rationale for this step..."
+          oninput="updW(${s.id},'ratCustom',this.value)">${s.ratCustom}</textarea>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="lbl">Admin Note (notifications)</label>
+        <input type="text" value="${s.adminNote||''}" placeholder="e.g. Notification to QA on activation" oninput="updW(${s.id},'adminNote',this.value)"></div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" onclick="moveW(${s.id},-1)">↑</button>
+        <button class="btn btn-ghost" onclick="moveW(${s.id},1)">↓</button>
+        <button class="btn btn-danger" onclick="removeW(${s.id})">Remove</button>
+      </div>
+    </div>`;
+  c.appendChild(div);
+  div.classList.add('open');
+}
+
+function toggleCard(id){document.getElementById(id).classList.toggle('open');}
+function updW(id,f,v){const s=steps.find(x=>x.id===id);if(s)s[f]=v;}
+function updWPrev(id){const s=steps.find(x=>x.id===id),el=document.getElementById('wprev-'+id);if(el&&s){el.textContent=s.name||'Click to edit step details';el.className='card-preview'+(s.name?'':' ph-txt');}}
+function updWBadge(id){const s=steps.find(x=>x.id===id),card=document.getElementById('wcard-'+id);if(!s||!card)return;const b=card.querySelector('.card-badge');if(b){b.className='card-badge '+(s.branch==='tier1'?'b-t1':s.branch==='tier2'?'b-t2':'b-all');b.textContent=s.branch==='tier1'?'Tier 1':s.branch==='tier2'?'Tier 2':'All paths';}}
+function updWRat(id,v){const s=steps.find(x=>x.id===id);if(s)s.ratPreset=v;const cf=document.getElementById('wrat-'+id);if(cf){if(v==='custom'||v===''){cf.classList.add('visible');}else{cf.classList.remove('visible');if(s)s.ratCustom='';}}}
+function getWRat(s){if(s.ratPreset==='custom'||s.ratPreset==='')return s.ratCustom;return s.ratPreset;}
+function moveW(id,dir){const idx=steps.findIndex(s=>s.id===id),ni=idx+dir;if(ni<0||ni>=steps.length)return;[steps[idx],steps[ni]]=[steps[ni],steps[idx]];const c=document.getElementById('stepsContainer');c.innerHTML='';const sv=[...steps];steps=[];stc=0;sv.forEach(s=>addStep(s));}
+function removeW(id){if(!confirm('Remove this step?'))return;steps=steps.filter(s=>s.id!==id);const el=document.getElementById('wcard-'+id);if(el)el.remove();}
+
+// ── Export Summary ──────────────────────────────────────────────────────────
+function buildExpSummary(){
+  const num=document.getElementById('docNum').value||'—';
+  const mod=document.getElementById('module').value||'—';
+  const wf=document.getElementById('workflowName').value;
+  const site=document.getElementById('site').value;
+  const items = docType==='module' ? settings : steps;
+  const rrCount = docType==='module' ? settings.filter(s=>s.riskClass==='Risk-Relevant').length : steps.length;
+  document.getElementById('expSummary').innerHTML=`
+    <div><div class="es-lbl">Document</div><div class="es-val" style="font-size:12px">${num}</div></div>
+    <div><div class="es-lbl">Type</div><div class="es-val" style="font-size:12px">${docType==='module'?mod:(wf||'—')+' / '+(site||'—')}</div></div>
+    <div><div class="es-lbl">${docType==='module'?'Settings':'Steps'}</div><div class="es-val">${items.length}</div></div>
+    <div><div class="es-lbl">${docType==='module'?'Risk-Relevant':'IUV Steps'}</div><div class="es-val">${rrCount}</div></div>`;
+}
+
+// ── Validation ──────────────────────────────────────────────────────────────
+function validate(){
+  const required=['docNum','system','module','iuvPackage','intendedUse'];
+  if(docType==='workflow') required.push('workflowName','site');
+  for(const id of required){if(!document.getElementById(id).value.trim())return false;}
+  return (docType==='module'?settings:steps).length>0;
+}
+
+// ── JSON ────────────────────────────────────────────────────────────────────
+function collectData(){
+  return{
+    docType,
+    header:{
+      docNum:document.getElementById('docNum').value,
+      revision:document.getElementById('revision').value,
+      effectiveDate:document.getElementById('effectiveDate').value,
+      system:document.getElementById('system').value,
+      module:document.getElementById('module').value,
+      workflowName:document.getElementById('workflowName').value,
+      site:document.getElementById('site').value,
+      iuvPackage:document.getElementById('iuvPackage').value,
+      valPlan:document.getElementById('valPlan').value,
+      author:document.getElementById('author').value,
+      gxpClass:document.getElementById('gxpClass').value,
+      intendedUse:document.getElementById('intendedUse').value,
+      esigNote:document.getElementById('esigNote').value,
+      partEleven:document.getElementById('partEleven').value,
+      supersedes:document.getElementById('supersedes').value,
+      iuvRef2:document.getElementById('iuvRef2').value,
+    },
+    settings:settings.map(s=>({...s,ratResolved:getSRat(s)})),
+    steps:steps.map(s=>({...s,ratResolved:getWRat(s)})),
+  };
+}
+
+function exportJSON(){
+  const d=collectData();
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=(d.header.docNum||'config-spec')+'_form-data.json';a.click();URL.revokeObjectURL(url);
+}
+
+function loadJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();r.onload=ev=>{try{populateForm(JSON.parse(ev.target.result));}catch{alert('Could not parse file.');}};r.readAsText(file);
+}
+
+function populateForm(d){
+  if(d.docType){selectType(d.docType);confirmType();}
+  const h=d.header||{};
+  ['docNum','revision','effectiveDate','system','module','workflowName','site','iuvPackage',
+   'valPlan','author','gxpClass','intendedUse','esigNote','partEleven','supersedes','iuvRef2']
+  .forEach(id=>{const el=document.getElementById(id);if(el&&h[id]!==undefined)el.value=h[id];});
+  updateDocId();
+  document.getElementById('settingsContainer').innerHTML='';settings=[];sc=0;
+  document.getElementById('stepsContainer').innerHTML='';steps=[];stc=0;
+  (d.settings||[]).forEach(s=>addSetting(s));
+  (d.steps||[]).forEach(s=>addStep(s));
+  goTo(0);
+}
+
+// ── Export both documents ────────────────────────────────────────────────────
+async function exportBoth(){
+  if(!validate()){const n=document.getElementById('expNotice');n.classList.remove('hidden');setTimeout(()=>n.classList.add('hidden'),4000);return;}
+  const overlay=document.getElementById('overlay'),status=document.getElementById('ovStatus');
+  overlay.classList.add('active');
+  try{
+    const data=collectData();
+    status.textContent='Building Config Spec...';
+    await delay(100);
+    await buildConfigSpec(data);
+    status.textContent='Building IUV Package...';
+    await delay(600);
+    await buildIUVPackage(data);
+  }catch(err){console.error(err);alert('Export failed: '+err.message);}
+  finally{overlay.classList.remove('active');}
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── Shared docx helpers ─────────────────────────────────────────────────────
+function getDocxHelpers(){
+  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,
+    AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType}=window.docx;
+  const PURPLE="7030A0",LGRAY="F2F2F2",MGRAY="D9D9D9",BGRAY="D6E4F0",GREEN_BG="E8F4E8",AMBER_BG="FFF2CC";
+  const thin={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"};
+  const allThin={top:thin,bottom:thin,left:thin,right:thin};
+  const cm=()=>({top:80,bottom:80,left:120,right:120});
+  const W=9360;
+  const a=(text,opts={})=>new TextRun({text:String(text||''),font:"Arial",size:opts.size||20,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
+  const p=(children,opts={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:opts.align||AlignmentType.LEFT,spacing:{before:opts.before||0,after:opts.after!==undefined?opts.after:80,line:240},indent:opts.indent?{left:opts.indent}:undefined});
+  const blank=()=>p(a(" "),{after:0});
+  const secHdr=text=>new Paragraph({children:[a(text,{bold:true,size:20})],spacing:{before:160,after:80,line:240},border:{bottom:{style:BorderStyle.SINGLE,size:6,color:PURPLE,space:4}}});
+  const hc=(text,w,fill)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||PURPLE,type:ShadingType.CLEAR},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,children:[p(a(text,{bold:true,size:18,color:"FFFFFF"}),{after:0})]});
+  const dc=(text,w,fill,bold)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.TOP,children:[p(a(text||"",{size:18,bold:bold||false}),{after:0})]});
+
+  const makeDocHdr=(h,docLabel,titleText,docNum,rev)=>new Table({
+    width:{size:W,type:WidthType.DXA},columnWidths:[2000,5200,2160],layout:TableLayoutType.FIXED,
+    borders:{top:{style:BorderStyle.DOUBLE,size:6,color:"000000"},bottom:{style:BorderStyle.DOUBLE,size:6,color:"000000"},left:{style:BorderStyle.DOUBLE,size:6,color:"000000"},right:{style:BorderStyle.DOUBLE,size:6,color:"000000"},insideH:thin,insideV:thin},
+    rows:[
+      new TableRow({children:[
+        new TableCell({width:{size:2000,type:WidthType.DXA},rowSpan:2,shading:{fill:LGRAY,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p(a(docLabel,{bold:true,size:16}),{align:AlignmentType.CENTER,after:0})]}),
+        new TableCell({width:{size:5200,type:WidthType.DXA},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p(a(titleText,{bold:true,size:20,color:PURPLE}),{align:AlignmentType.CENTER,after:0})]}),
+        new TableCell({width:{size:2160,type:WidthType.DXA},shading:{fill:LGRAY,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p([a("Doc #: ",{bold:true,size:18}),a(docNum,{size:18})],{after:20}),p([a("Revision: ",{bold:true,size:18}),a(rev,{size:18})],{after:0})]}),
+      ]}),
+      new TableRow({children:[
+        new TableCell({width:{size:5200,type:WidthType.DXA},margins:cm(),children:[p([a("System: ",{bold:true,size:18}),a(h.system+"   ",{size:18}),a("Module: ",{bold:true,size:18}),a(h.module+(h.workflowName?"   ":""),{size:18}),h.workflowName?a("Workflow: ",{bold:true,size:18}):a("",{size:18}),h.workflowName?a(h.workflowName+"   ",{size:18}):a("",{size:18}),a("IUV #: ",{bold:true,size:18}),a(h.iuvPackage,{size:18})],{after:0})]}),
+        new TableCell({width:{size:2160,type:WidthType.DXA},shading:{fill:LGRAY,type:ShadingType.CLEAR},margins:cm(),children:[p([a("Site: ",{bold:true,size:18}),a(h.site||"All Sites",{size:18})],{after:0})]}),
+      ]}),
+    ]
+  });
+
+  const makeMetaTable=(h)=>{
+    const MW=[2000,2680,2000,2680];
+    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:MW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({children:[dc("Effective Date:",MW[0],LGRAY,true),dc(h.effectiveDate||"[MM/DD/YYYY]",MW[1]),dc("Supersedes:",MW[2],LGRAY,true),dc(h.supersedes,MW[3])]}),
+      new TableRow({children:[dc("Related Val. Plan:",MW[0],LGRAY,true),dc(h.valPlan,MW[1]),dc("Related IUV Package:",MW[2],LGRAY,true),dc(h.iuvPackage,MW[3])]}),
+      new TableRow({children:[dc("GxP Classification:",MW[0],LGRAY,true),dc(h.gxpClass,MW[1]),dc("21 CFR Part 11 / Annex 11:",MW[2],LGRAY,true),dc(h.partEleven,MW[3])]}),
+    ]});
+  };
+
+  const makeChangeHist=(h,note)=>{
+    const CHW=[1400,900,2100,4960];
+    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:CHW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc("Date",CHW[0]),hc("Revision",CHW[1]),hc("Author",CHW[2]),hc("Changes",CHW[3])]}),
+      new TableRow({children:[dc(h.effectiveDate||"MM/DD/26",CHW[0]),dc(h.revision,CHW[1]),dc(h.author||"[Author]",CHW[2]),dc(note,CHW[3])]}),
+    ]});
+  };
+
+  return{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
+    PURPLE,LGRAY,MGRAY,BGRAY,GREEN_BG,AMBER_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeMetaTable,makeChangeHist};
+}
+
+// ── Config Spec builder ──────────────────────────────────────────────────────
+async function buildConfigSpec(data){
+  const {Document,Packer,Table,TableRow,AlignmentType,WidthType,ShadingType,VerticalAlign,TableLayoutType,
+    PURPLE,LGRAY,BGRAY,GREEN_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeMetaTable,makeChangeHist}=getDocxHelpers();
+  const h=data.header;
+  const isWF=data.docType==='workflow';
+  const titleText=isWF?(h.workflowName+' — '+(h.site||'All Sites')+' Site'):h.module+' Module Configuration Specification';
+  const docHdr=makeDocHdr(h,isWF?"WORKFLOW CONFIGURATION SPECIFICATION":"MODULE CONFIGURATION SPECIFICATION",titleText,h.docNum,h.revision);
+  const metaTable=makeMetaTable(h);
+
+  let configSection=[];
+
+  if(isWF){
+    // Two step map tables for readability
+    const SMA=[440,1700,900,1700,1700,1420,500];
+    const stepTableA=new Table({width:{size:W,type:WidthType.DXA},columnWidths:SMA,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc("#",SMA[0]),hc("Step Name",SMA[1]),hc("Branch",SMA[2]),hc("Assigned To",SMA[3]),hc("Reassign Auth",SMA[4]),hc("Step Type",SMA[5]),hc("E-Sig",SMA[6])]}),
+      ...data.steps.map(s=>{
+        const fill=s.branch==='tier1'?GREEN_BG:s.branch==='tier2'?BGRAY:"FFFFFF";
+        const bl=s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':'All paths';
+        return new TableRow({children:[dc(String(s.num),SMA[0],LGRAY,true),dc(s.name,SMA[1],fill),dc(bl,SMA[2],fill),dc(s.assignedTo,SMA[3],fill),dc(s.reassignAuth,SMA[4],fill),dc(s.stepType,SMA[5],fill),dc(s.eSig,SMA[6],fill)]});
+      })
+    ]});
+    const SMB=[440,1700,6220,1000];
+    const stepTableB=new Table({width:{size:W,type:WidthType.DXA},columnWidths:SMB,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc("#",SMB[0]),hc("Step Name",SMB[1]),hc("GxP Rationale",SMB[2]),hc("IUV Ref",SMB[3])]}),
+      ...data.steps.map(s=>new TableRow({children:[dc(String(s.num),SMB[0],LGRAY,true),dc(s.name,SMB[1],LGRAY),dc(s.ratResolved||"",SMB[2]),dc(s.iuvRef,SMB[3],LGRAY)]}))
+    ]});
+    const APW=[440,1900,1900,5220];
+    const adminTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:APW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc("#",APW[0]),hc("Step Name",APW[1]),hc("Step Type",APW[2]),hc("Notification / Notes",APW[3])]}),
+      ...data.steps.map((s,i)=>new TableRow({children:[dc(String(s.num),APW[0],LGRAY,true),dc(s.name,APW[1],i%2===0?"FFFFFF":LGRAY),dc(s.stepType,APW[2],i%2===0?"FFFFFF":LGRAY),dc(s.adminNote||"",APW[3],i%2===0?"FFFFFF":LGRAY)]}))
+    ]});
+    configSection=[
+      secHdr("2.  WORKFLOW STEP MAP — CONFIGURATION"),
+      p(a("The table below documents the step-level configuration of this workflow."),{after:80}),
+      stepTableA,blank(),
+      secHdr("3.  WORKFLOW STEP MAP — GxP RATIONALE"),
+      p(a("The table below documents the GxP rationale for each step and the corresponding IUV test step reference."),{after:80}),
+      stepTableB,blank(),
+      secHdr("4.  ADMINISTRATIVE PROPERTIES"),
+      p(a("Administrative configuration of each step for reference and change tracking."),{after:80}),
+      adminTable,blank(),
+    ];
+  } else {
+    // Module config table
+    const CW=[1800,2200,1200,3160,900];
+    const configTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:CW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc("Setting Name",CW[0]),hc("Configured Value",CW[1]),hc("Risk Classification",CW[2]),hc("Business Rationale",CW[3]),hc("IUV Required",CW[4])]}),
+      ...data.settings.map((s,i)=>{
+        const rr=s.riskClass==='Risk-Relevant';
+        const rcFill=rr?BGRAY:LGRAY;
+        const iuvFill=s.iuvReq==='Yes'?BGRAY:LGRAY;
+        return new TableRow({children:[
+          dc(s.name,CW[0],i%2===0?"FFFFFF":LGRAY),
+          dc(s.value,CW[1],i%2===0?"FFFFFF":LGRAY),
+          dc(s.riskClass,CW[2],rcFill,true),
+          dc(s.ratResolved||"",CW[3],i%2===0?"FFFFFF":LGRAY),
+          dc(s.iuvReq,CW[4],iuvFill,true),
+        ]});
+      })
+    ]});
+    configSection=[
+      secHdr("2.  CONFIGURATION SETTINGS"),
+      p(a("The table below documents each configuration setting, its configured value, risk classification, business rationale, and IUV requirement."),{after:80}),
+      configTable,blank(),
+    ];
+  }
+
+  const changeHist=makeChangeHist(h,"Initial release — CC2026-013 Computer Software Assurance transition project for MasterControl.");
+  const sectionNum=isWF?5:3;
+
+  const doc=new Document({sections:[{
+    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
+    children:[
+      docHdr,blank(),metaTable,blank(),
+      secHdr("1.  INTENDED USE"),
+      p(a(h.intendedUse),{after:80}),
+      p([a("Note: ",{bold:true,size:18}),a(h.esigNote,{size:18,italic:true})],{after:0}),
+      blank(),
+      ...configSection,
+      secHdr(sectionNum+".  CHANGE HISTORY"),
+      changeHist,blank(),
+      p(a("END OF DOCUMENT",{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
+    ]
+  }]});
+
+  const blob=await Packer.toBlob(doc);
+  const url=URL.createObjectURL(blob);
+  const a2=document.createElement('a');a2.href=url;
+  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+'_'+h.site:h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
+  a2.download=fname;a2.click();URL.revokeObjectURL(url);
+}
+
+// ── IUV Package builder ──────────────────────────────────────────────────────
+async function buildIUVPackage(data){
+  const {Document,Packer,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
+    PURPLE,LGRAY,MGRAY,AMBER_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeChangeHist}=getDocxHelpers();
+  const h=data.header;
+  const isWF=data.docType==='workflow';
+  const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('CS-',''));
+  const titleText=isWF?(h.workflowName+' — '+(h.site||'All Sites')+' — IUV Evidence Package'):h.module+' Module — IUV Evidence Package';
+  const docHdr=makeDocHdr(h,"IUV EVIDENCE PACKAGE",titleText,iuvDocNum,h.revision);
+
+  // Execution sign-off
+  const AW=[2340,2340,2340,2340];
+  const signOffTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:AW,layout:TableLayoutType.FIXED,rows:[
+    new TableRow({tableHeader:true,children:[hc("Role",AW[0]),hc("Name",AW[1]),hc("Signature",AW[2]),hc("Date",AW[3])]}),
+    ...["IUV Executor (Process Owner)","IUV Witness (if applicable)","QA Reviewer"].map(role=>
+      new TableRow({children:[dc(role,AW[0],LGRAY,true),dc("",AW[1]),dc("",AW[2]),dc("",AW[3])]}))
+  ]});
+
+  // Pre-execution checklist
+  const PCW=[600,7360,1400];
+  const preCheckItems=[
+    "Configuration Specification ("+h.docNum+") is approved and effective prior to IUV execution.",
+    "IUV is being executed in the correct environment (specify: Production / Staging: ____________).",
+    "MasterControl system version confirmed: ____________.",
+    "Test accounts with required roles are available and confirmed.",
+    "Executor has reviewed the Configuration Specification and understands all test steps prior to execution.",
+    "QA has been notified that IUV execution is commencing.",
+  ];
+  const preCheckTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:PCW,layout:TableLayoutType.FIXED,rows:[
+    new TableRow({tableHeader:true,children:[hc("#",PCW[0]),hc("Pre-Execution Condition",PCW[1]),hc("Confirmed",PCW[2])]}),
+    ...preCheckItems.map((item,i)=>new TableRow({children:[
+      dc(String(i+1)+".",PCW[0],LGRAY,true),
+      dc(item,PCW[1],i%2===0?"FFFFFF":LGRAY),
+      new TableCell({width:{size:PCW[2],type:WidthType.DXA},borders:allThin,margins:cm(),children:[p(a("☐ Yes  ☐ No",{size:18}),{align:AlignmentType.CENTER,after:0})]}),
+    ]}))
+  ]});
+
+  // IUV steps — auto-generate from risk-relevant items
+  const iuvItems = isWF
+    ? data.steps.map(s=>({ref:String(s.num),name:s.name,csRef:h.docNum,rationale:s.ratResolved||""}))
+    : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef:h.docNum,rationale:s.ratResolved||""}));
+
+  function iuvStepBlock(item,idx){
+    const SW=[1400,7960];
+    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({children:[
+        new TableCell({width:{size:W,type:WidthType.DXA},columnSpan:2,shading:{fill:PURPLE,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
+          children:[p(a("Step "+(idx+1)+":  "+item.name+" ("+item.csRef+" — "+item.ref+")",{bold:true,size:20,color:"FFFFFF"}),{after:0})]})
+      ]}),
+      ...[
+        ["Configuration Reference:",item.csRef+" — "+item.ref],
+        ["GxP Rationale:",item.rationale||"[Describe why this configuration is GxP-critical]"],
+        ["Test Action:","[Describe the specific action to take to verify this configuration is in place and functioning as intended]"],
+        ["Expected Result / Acceptance Criterion:","[Describe what must be observed for this step to pass]"],
+        ["Evidence Format:","☐ Screenshot(s)   ☐ Screen recording   ☐ Witnessed walkthrough — Witness signature in sign-off above"],
+      ].map(([label,content])=>new TableRow({children:[
+        dc(label,SW[0],LGRAY,true),
+        dc(content,SW[1]),
+      ]})),
+      new TableRow({children:[
+        dc("Result:",SW[0],MGRAY,true),
+        new TableCell({width:{size:SW[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[p(a("☐ Pass          ☐ Fail          ☐ N/A",{bold:true,size:20}),{after:0})]}),
+      ]}),
+      new TableRow({children:[
+        dc("Discrepancy / Notes:",SW[0],AMBER_BG,true),
+        dc("[Record any unexpected behavior, discrepancy reference number, or N/A if none]",SW[1]),
+      ]}),
+    ]});
+  }
+
+  // IUV summary
+  const IUVSUM=[2400,6960];
+  const summaryTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:IUVSUM,layout:TableLayoutType.FIXED,rows:[
+    ...[
+      ["Total IUV Steps",String(iuvItems.length)],
+      ["Steps Passed","[  ]"],
+      ["Steps Failed","[  ]"],
+      ["Steps N/A","[  ]"],
+      ["Discrepancies Opened","[  ]  — Deviation reference(s): _______________"],
+      ["IUV Execution Date(s)","[MM/DD/YYYY – MM/DD/YYYY]"],
+      ["MasterControl Version Tested","[Version]"],
+      ["Environment","☐ Production    ☐ Staging"],
+    ].map(([l,v])=>new TableRow({children:[dc(l,IUVSUM[0],LGRAY,true),dc(v,IUVSUM[1])]})),
+    new TableRow({children:[
+      dc("Release Decision",IUVSUM[0],PURPLE,true),
+      new TableCell({width:{size:IUVSUM[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[
+        p(a("☐ APPROVED — All IUV steps passed. System validated for intended use as defined in "+h.docNum+".",{size:18}),{after:40}),
+        p(a("☐ CONDITIONALLY APPROVED — Open discrepancies documented and risk-accepted. See deviation reference(s) above.",{size:18}),{after:40}),
+        p(a("☐ NOT APPROVED — IUV failures require remediation before release. See deviation reference(s) above.",{size:18}),{after:0}),
+      ]}),
+    ]}),
+  ]});
+
+  // QA release sign-off
+  const QAW=[3120,3120,3120];
+  const qaSignOff=new Table({width:{size:W,type:WidthType.DXA},columnWidths:QAW,layout:TableLayoutType.FIXED,rows:[
+    new TableRow({tableHeader:true,children:[hc("QA Approver Name",QAW[0]),hc("Signature",QAW[1]),hc("Date",QAW[2])]}),
+    new TableRow({children:[dc("",QAW[0]),dc("",QAW[1]),dc("",QAW[2])]}),
+  ]});
+
+  const changeHist=makeChangeHist(h,"Initial release — CC2026-013 Computer Software Assurance transition project for MasterControl.");
+
+  const children=[
+    docHdr,blank(),
+    secHdr("1.  PURPOSE AND SCOPE"),
+    p(a("This IUV Evidence Package documents the Intended Use Verification performed to confirm that the "+h.system+" "+h.module+(isWF?" — "+h.workflowName:"")+" configuration, as documented in Configuration Specification "+h.docNum+", supports its intended GxP use. IUV is performed against each risk-relevant configuration identified in the Configuration Specification. Administrative configurations are excluded from IUV scope."),{after:0}),blank(),
+    secHdr("2.  EXECUTION SIGN-OFF"),
+    signOffTable,blank(),
+    secHdr("3.  PRE-EXECUTION CHECKLIST"),
+    preCheckTable,blank(),
+    secHdr("4.  IUV TEST STEPS"),
+    p(a("Complete all Pass/Fail fields at time of execution. Do not pre-populate results. Attach evidence directly to this document or the associated MasterControl validation record package."),{after:80}),
+    ...iuvItems.flatMap((item,i)=>[iuvStepBlock(item,i),blank()]),
+    secHdr("5.  IUV SUMMARY AND RELEASE DECISION"),
+    summaryTable,blank(),
+    p(a("QA Approval of Release Decision:",{bold:true,size:20}),{before:120,after:60}),
+    qaSignOff,blank(),
+    secHdr("6.  CHANGE HISTORY"),
+    changeHist,blank(),
+    p(a("END OF DOCUMENT",{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
+  ];
+
+  const doc=new Document({sections:[{
+    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
+    children
+  }]});
+
+  const blob=await Packer.toBlob(doc);
+  const url=URL.createObjectURL(blob);
+  const a2=document.createElement('a');a2.href=url;
+  const fname=iuvDocNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+'_'+h.site:h.module.replace(/\s+/g,'_'))+'_IUV_Package.docx';
+  a2.download=fname;a2.click();URL.revokeObjectURL(url);
+}
+
+// ── Document Number Counter System ─────────────────────────────────────────
+// Prefix map: derive from docType + module selection
+const PREFIX_MAP = {
+  'workflow:Documents':        'CS-DOC-WF',
+  'workflow:Training':         'CS-TRN-WF',
+  'workflow:AQEM':             'CS-AQEM-WF',
+  'workflow:Supplier':         'CS-SUP-WF',
+  'workflow:Audit':            'CS-AUD-WF',
+  'workflow:Risk':             'CS-RISK-WF',
+  'workflow:Production Records':'CS-PROD-WF',
+  'workflow:System / Security':'CS-SYS-WF',
+  'module:Documents':          'CS-DOC',
+  'module:Training':           'CS-TRN',
+  'module:AQEM':               'CS-AQEM',
+  'module:Supplier':           'CS-SUP',
+  'module:Audit':              'CS-AUD',
+  'module:Risk':               'CS-RISK',
+  'module:Production Records': 'CS-PROD',
+  'module:System / Security':  'CS-SYS',
+};
+
+const COUNTERS_KEY = 'cs_doc_counters';
+let docNumLocked = false;
+let currentPrefix = null;
+
+function getCounters() {
+  try {
+    const raw = localStorage.getItem(COUNTERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCounters(counters) {
+  try { localStorage.setItem(COUNTERS_KEY, JSON.stringify(counters)); } catch {}
+}
+
+function getNextNum(prefix) {
+  const counters = getCounters();
+  return (counters[prefix] || 0) + 1;
+}
+
+function incrementCounter(prefix) {
+  const counters = getCounters();
+  counters[prefix] = (counters[prefix] || 0) + 1;
+  saveCounters(counters);
+}
+
+function derivePrefix() {
+  const type = docType || 'module';
+  const mod = document.getElementById('module').value || 'Documents';
+  return PREFIX_MAP[type + ':' + mod] || ('CS-' + mod.toUpperCase().replace(/[^A-Z]/g,'-').replace(/-+/g,'-').slice(0,6));
+}
+
+function formatDocNum(prefix, num) {
+  return prefix + '-' + String(num).padStart(3, '0');
+}
+
+function suggestDocNum() {
+  if (docNumLocked) return;
+  const prefix = derivePrefix();
+  currentPrefix = prefix;
+  const num = getNextNum(prefix);
+  const suggested = formatDocNum(prefix, num);
+  const input = document.getElementById('docNum');
+  // Only auto-fill if field is empty or was previously auto-filled
+  if (!input.dataset.manualEdit) {
+    input.value = suggested;
+    input.placeholder = suggested;
+    updateDocId();
+  }
+  setDocNumStatus('auto', 'Auto-suggested — will lock when you proceed');
+}
+
+function onDocNumInput() {
+  updateDocId();
+  if (docNumLocked) return;
+  const input = document.getElementById('docNum');
+  const suggested = currentPrefix ? formatDocNum(currentPrefix, getNextNum(currentPrefix)) : '';
+  if (input.value !== suggested) {
+    input.dataset.manualEdit = 'true';
+    setDocNumStatus('manual', 'Manually edited — counter will not increment for this number');
+  } else {
+    delete input.dataset.manualEdit;
+    setDocNumStatus('auto', 'Auto-suggested — will lock when you proceed');
+  }
+}
+
+function setDocNumStatus(type, text) {
+  const pill = document.querySelector('.docnum-status .pill');
+  const statusText = document.getElementById('docNumStatusText');
+  if (!pill || !statusText) return;
+  pill.className = 'pill pill-' + type;
+  pill.textContent = type === 'auto' ? 'Auto' : type === 'manual' ? 'Manual' : 'Locked';
+  statusText.textContent = text;
+}
+
+function lockAndProceed() {
+  if (!docNumLocked) {
+    const input = document.getElementById('docNum');
+    const isManual = !!input.dataset.manualEdit;
+    if (!isManual && currentPrefix) {
+      // Only increment if this was an auto-suggested number
+      incrementCounter(currentPrefix);
+    }
+    docNumLocked = true;
+    input.style.background = 'var(--green-light)';
+    input.style.borderColor = 'var(--green)';
+    setDocNumStatus('locked', 'Locked — counter incremented for next user');
+    refreshCounterGrid();
+  }
+  goTo(2);
+}
+
+function refreshCounterGrid() {
+  const grid = document.getElementById('counterGrid');
+  if (!grid) return;
+  const counters = getCounters();
+  const prefixes = Object.values(PREFIX_MAP);
+  const uniquePrefixes = [...new Set(prefixes)].sort();
+  if (uniquePrefixes.length === 0) {
+    grid.innerHTML = '<div style="color:var(--ink-muted);font-size:11px">No counters yet — counters initialize when the first document of each type is created.</div>';
+    return;
+  }
+  grid.innerHTML = uniquePrefixes.map(p => {
+    const current = counters[p] || 0;
+    const next = formatDocNum(p, current + 1);
+    return `<div class="counter-item">
+      <span class="counter-item-prefix">${p}</span>
+      <span class="counter-item-num">${next}</span>
+      <button class="counter-reset-btn" onclick="resetCounter('${p}')" title="Reset counter">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function resetCounter(prefix) {
+  if (!confirm('Reset counter for ' + prefix + '? Next document will be ' + formatDocNum(prefix, 1))) return;
+  const counters = getCounters();
+  delete counters[prefix];
+  saveCounters(counters);
+  refreshCounterGrid();
+  if (!docNumLocked) suggestDocNum();
+}
+
+// Hook into module select change to update suggestion
+document.addEventListener('DOMContentLoaded', () => {
+  const modSelect = document.getElementById('module');
+  if (modSelect) {
+    modSelect.addEventListener('change', () => {
+      if (!docNumLocked) { delete document.getElementById('docNum').dataset.manualEdit; suggestDocNum(); }
+    });
+  }
+  refreshCounterGrid();
+});
+
+// Override confirmType to trigger suggestion after type is set
+const _origConfirmType = confirmType;
+confirmType = function() {
+  _origConfirmType();
+  setTimeout(() => { suggestDocNum(); refreshCounterGrid(); }, 50);
+};
+
+// Override populateForm to not overwrite a locked number
+const _origPopulateForm = populateForm;
+populateForm = function(d) {
+  docNumLocked = false;
+  const input = document.getElementById('docNum');
+  if (input) {
+    input.style.background = '';
+    input.style.borderColor = '';
+    delete input.dataset.manualEdit;
+  }
+  _origPopulateForm(d);
+};
+
+</script>
+</body>
+</html>
