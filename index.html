@@ -676,7 +676,7 @@ function renderStep(s) {
           <div class="field"><label class="lbl">E-Signature</label>
             <select onchange="updW(${s.id},'eSig',this.value)">${['Yes','N/A'].map(v=>`<option${s.eSig===v?' selected':''}>${v}</option>`).join('')}</select></div>
           <div class="field"><label class="lbl">IUV Reference</label>
-            <input type="text" value="${s.iuvRef||''}" placeholder="e.g. Step 1.1 or N/A" oninput="updW(${s.id},'iuvRef',this.value)"></div>
+            <input type="text" value="${s.iuvRef||''}" placeholder="e.g. Step 1 or N/A" oninput="updW(${s.id},'iuvRef',this.value)"></div>
         </div>
         <div class="field"><label class="lbl">GxP Rationale <span class="req">*</span></label>
           <select onchange="updWRat(${s.id},this.value)">${ratOpts}</select>
