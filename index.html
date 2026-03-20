@@ -1366,12 +1366,14 @@ function getDocxHelpers(){
 
   // ── Footer (confidentiality + page number) ─────────────────────────────────
   function makeFooter() {
+    // docx v7: PageNumber.CURRENT and PageNumber.TOTAL_PAGES are enum values, not constructors
+    const PageNumber = docx.PageNumber;
     return new Paragraph({
       children:[
-        new TextRun({text:"CONFIDENTIAL — Property of the company. This information is proprietary and may not be copied or distributed without consent.		",font:"Calibri",size:14,italics:true,color:"808080"}),
-        new TextRun({children:[new docx.PageNumber()],font:"Calibri",size:14,color:"808080"}),
+        new TextRun({text:"CONFIDENTIAL — Property of the company. This information is proprietary and may not be copied or distributed without consent.    ",font:"Calibri",size:14,italics:true,color:"808080"}),
+        new TextRun({children:[PageNumber.CURRENT],font:"Calibri",size:14,color:"808080"}),
         new TextRun({text:" of ",font:"Calibri",size:14,color:"808080"}),
-        new TextRun({children:[new docx.NumberOfPages()],font:"Calibri",size:14,color:"808080"}),
+        new TextRun({children:[PageNumber.TOTAL_PAGES],font:"Calibri",size:14,color:"808080"}),
       ],
       alignment:AlignmentType.LEFT,
       spacing:{before:0,after:0},
