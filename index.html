@@ -264,13 +264,13 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg">
       <div class="field"><label class="lbl">System <span class="req">*</span></label><input type="text" id="system" value="MasterControl"></div>
       <div class="field"><label class="lbl">Module <span class="req">*</span></label>
-        <select id="module"><option value="">— Select —</option><option>Documents</option><option>Training</option><option>AQEM</option><option>Supplier</option><option>Audit</option><option>Risk</option><option>Production Records</option><option>System / Security</option></select>
+        <select id="module"><option value="">— Select —</option><option>Documents</option><option>Training</option><option>Process</option><option>AQEM</option><option>Supplier</option><option>Audit</option><option>Risk</option><option>Production Records</option><option>System / Security</option></select>
       </div>
     </div>
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
       <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
-        <select id="site"><option value="">— Select —</option><option>Corporate</option><option>Manufacturing</option><option>Fulfillment</option><option>Brazil</option><option>Ireland</option><option>All Sites</option></select>
+        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -433,15 +433,27 @@ let sc = 0, stc = 0; // counters
 // ── Presets ────────────────────────────────────────────────────────────────
 const RATIONALE_PRESETS = [
   {v:"",l:"— Select common rationale —"},
-  {v:"CR role scoped to site and department prevents unauthorized initiation. Mandatory fields must be completed before the step can advance.",l:"CR role enforcement — prevents unauthorized initiation"},
-  {v:"Originator as Collaboration Leader must sign off. Additional reviewers optional. Controls peer review gate before routing to approval steps.",l:"Collaboration Leader gate — peer review control"},
-  {v:"Doc Control receives and may reassign within the Doc Control role. Formatting and completeness review before department approval.",l:"Doc Control formatting review"},
-  {v:"Routing authority limited to Originator and Doc Control — prevents unauthorized reassignment to an unqualified approver.",l:"Department approval — restricted routing authority"},
-  {v:"QA Approver role required. Primary GxP control point — no document becomes effective without QA sign-off.",l:"QA Approval — primary GxP control point"},
-  {v:"Confirms training has been assigned before effective date is set. Verifies assignment, not completion.",l:"Training verification — assignment confirmed before effectivity"},
+  {v:"CR role scoped to site and department prevents unauthorized initiation. Mandatory fields must be completed before the step can advance.",l:"CR — role enforcement, unauthorized initiation prevention"},
+  {v:"Event initiation restricted to authorized role. Ensures quality events are created by trained, designated personnel only; prevents unauthorized or accidental record creation.",l:"Event initiation — restricted to authorized role"},
+  {v:"Originator as Collaboration Leader must sign off. Additional reviewers optional. Controls peer review gate before routing to approval steps.",l:"Collaboration — Leader gate, peer review control"},
+  {v:"Doc Control receives and may reassign within the Doc Control role. Formatting and completeness review before department approval.",l:"Doc Control — formatting and completeness review"},
+  {v:"Department review ensures subject matter experts within the originating department have reviewed prior to QA. Routing authority limited to prevent unauthorized reassignment.",l:"Department approval — SME review before QA"},
+  {v:"R&D or technical review required before QA approval. Ensures scientific and technical accuracy of the record prior to quality sign-off.",l:"Technical/R&D review — accuracy before QA"},
+  {v:"Investigation step requires documented root cause analysis and corrective action before record can advance to approval. Mandatory field completion enforced by workflow.",l:"Investigation — root cause and corrective action gate"},
+  {v:"Effectiveness check confirms the corrective action implemented in the prior CAPA has achieved the intended outcome. Required before record closure.",l:"Effectiveness check — CAPA outcome verification before closure"},
+  {v:"QA Approver role required. Primary GxP control point — no record becomes effective or closed without QA sign-off.",l:"QA Approval — primary GxP control point"},
+  {v:"System Owner co-signature required for this change type per the Change Authority Matrix (SOP-00704 Section 5.9). Provides cross-site accountability and senior technical oversight.",l:"System Owner co-signature — Change Authority Matrix requirement"},
+  {v:"Multi-step approval enforces sequential review. Each approver must review and sign before the record advances; parallel routing is not configured for this workflow.",l:"Sequential approval — prevents parallel sign-off"},
   {v:"Final Approval step — triggers system-set effective date automatically upon e-signature. Effectivity is system-driven, not manually entered.",l:"Final Approval — system-set effective date"},
-  {v:"Mandatory AQEM Final Approval step. Assigned to Lead SA for all paths. Provides Lead SA visibility and sign-off on every change regardless of tier.",l:"Final Approval — Lead SA mandatory visibility"},
-  {v:"Notification step only. Not GxP-critical. Included for completeness.",l:"Notification — not GxP-critical"},
+  {v:"Mandatory AQEM Final Approval step. Assigned to Lead SA for all paths. Provides Lead SA visibility and sign-off on every SCC change regardless of tier.",l:"Final Approval — Lead SA mandatory visibility (SCC)"},
+  {v:"Closure step requires all prior steps including effectiveness check to be completed and signed. Prevents premature closure of open quality events.",l:"Closure — all prior steps must be complete"},
+  {v:"Confirms training has been assigned before effective date is set. Verifies assignment, not completion. Consistent with Training SOP policy.",l:"Training verification — assignment confirmed before effectivity"},
+  {v:"Supplier approval step ensures the supplier has been evaluated and approved by QA before the record can advance. Prevents use of unapproved suppliers.",l:"Supplier approval — QA evaluation gate"},
+  {v:"Audit finding requires documented disposition before the finding can be closed.",l:"Audit finding disposition — documented before closure"},
+  {v:"Escalation path triggered when primary approver does not respond within configured timeframe. Routes to designated escalation approver to prevent record stagnation.",l:"Escalation — prevents stagnation on non-response"},
+  {v:"Notification step only. Not GxP-critical. Included for completeness. No approval or routing control associated with this step.",l:"Notification — not GxP-critical"},
+  {v:"E-signature required at this step per system-wide module configuration. Approve/reject dropdown; no configured meaning statement.",l:"E-signature — system-wide module setting"},
+  {v:"E-signature required at this step per per-step configuration. Satisfies 21 CFR Part 11 §11.50 for records modified or approved at this step.",l:"E-signature — per-step configuration, Part 11 §11.50"},
   {v:"custom",l:"✏️  Write custom rationale..."},
 ];
 
@@ -617,7 +629,7 @@ function renderStep(s) {
   div.className='card'; div.id='wcard-'+s.id;
   const isRR=s.riskClass==='Risk-Relevant';
   const rcBadge=isRR?'<span class="card-badge b-rr">Risk-Relevant</span>':'<span class="card-badge b-adm">Administrative</span>';
-  const branchBadge=s.branch==='tier1'?'<span class="card-badge b-t1">Tier 1</span>':s.branch==='tier2'?'<span class="card-badge b-t2">Tier 2</span>':'<span class="card-badge b-all">All paths</span>';
+  const branchBadge=s.branch&&s.branch!=='both'&&s.branch!=='All paths'?'<span class="card-badge b-all" style="background:var(--surface-3);color:var(--ink-soft)">'+s.branch+'</span>':'';
   const ratOpts=RATIONALE_PRESETS.map(r=>`<option value="${r.v}"${s.ratPreset===r.v?' selected':''}>${r.l}</option>`).join('');
   const showCustom=s.ratPreset==='custom'||(s.ratCustom&&!RATIONALE_PRESETS.find(r=>r.v===s.ratPreset&&r.v!==''));
   // Show detail fields only for Risk-Relevant steps
@@ -645,12 +657,8 @@ function renderStep(s) {
           </select></div>
       </div>
       <div class="fg fg3">
-        <div class="field"><label class="lbl">Branch</label>
-          <select onchange="updW(${s.id},'branch',this.value);updWBadge(${s.id})">
-            <option value="both"${s.branch==='both'?' selected':''}>All paths</option>
-            <option value="tier1"${s.branch==='tier1'?' selected':''}>Tier 1 only</option>
-            <option value="tier2"${s.branch==='tier2'?' selected':''}>Tier 2 only</option>
-          </select></div>
+        <div class="field"><label class="lbl">Branch / Scope</label>
+          <input type="text" value="${s.branch==='both'?'All paths':s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':s.branch||''}" placeholder="e.g. All paths, Tier 1 only, Tier 2 only" oninput="updW(${s.id},'branch',this.value)"></div>
         <div class="field"><label class="lbl">Display Number</label>
           <input type="text" value="${s.num}" oninput="updW(${s.id},'num',this.value)"></div>
         <div class="field"></div>
@@ -662,10 +670,7 @@ function renderStep(s) {
           <div class="field"><label class="lbl">Assigned To</label>
             <input type="text" value="${s.assignedTo}" placeholder="e.g. QA Approver" oninput="updW(${s.id},'assignedTo',this.value)"></div>
           <div class="field"><label class="lbl">Reassign Authority</label>
-            <select onchange="updW(${s.id},'reassignAuth',this.value)">
-              <option value="">— Select —</option>
-              ${['None','Site Admin','Lead SA','Lead SA + Site Admin','Doc Control','QA Approver','System Owner','Originator','Originator, Doc Control','Training Coord./Admin, Doc Control'].map(r=>`<option value="${r}"${s.reassignAuth===r?' selected':''}>${r}</option>`).join('')}
-            </select></div>
+            <input type="text" value="${s.reassignAuth||''}" placeholder="e.g. None, Doc Control, QA Approver" oninput="updW(${s.id},'reassignAuth',this.value)"></div>
         </div>
         <div class="fg">
           <div class="field"><label class="lbl">E-Signature</label>
@@ -709,7 +714,7 @@ function rerenderStepRcBadge(id){
     badges[0].textContent=isRR?'Risk-Relevant':'Administrative';
   }
 }
-function updWBadge(id){const s=steps.find(x=>x.id===id),card=document.getElementById('wcard-'+id);if(!s||!card)return;const badges=card.querySelectorAll('.card-badge');const b=badges[1];if(b){b.className='card-badge '+(s.branch==='tier1'?'b-t1':s.branch==='tier2'?'b-t2':'b-all');b.textContent=s.branch==='tier1'?'Tier 1':s.branch==='tier2'?'Tier 2':'All paths';}}
+function updWBadge(id){} // branch is now free text — no badge to update
 function updWRat(id,v){const s=steps.find(x=>x.id===id);if(s)s.ratPreset=v;const cf=document.getElementById('wrat-'+id);if(cf){if(v==='custom'||v===''){cf.classList.add('visible');}else{cf.classList.remove('visible');if(s)s.ratCustom='';}}}
 function getWRat(s){if(s.ratPreset==='custom'||s.ratPreset==='')return s.ratCustom;return s.ratPreset;}
 function moveW(id,dir){const idx=steps.findIndex(s=>s.id===id),ni=idx+dir;if(ni<0||ni>=steps.length)return;[steps[idx],steps[ni]]=[steps[ni],steps[idx]];const c=document.getElementById('stepsContainer');c.innerHTML='';const sv=[...steps];steps=[];stc=0;sv.forEach(s=>addStep(s));}
@@ -721,7 +726,7 @@ function buildExpSummary(){
   const num=document.getElementById('docNum').value||'—';
   const mod=document.getElementById('module').value||'—';
   const wf=document.getElementById('workflowName').value;
-  const site=document.getElementById('site').value;
+  const site=getSiteValue();
   const items = docType==='module' ? settings : steps;
   const rrCount = docType==='module' ? settings.filter(s=>s.riskClass==='Risk-Relevant').length : steps.length;
   document.getElementById('expSummary').innerHTML=`
@@ -734,12 +739,27 @@ function buildExpSummary(){
 // ── Validation ──────────────────────────────────────────────────────────────
 function validate(){
   const required=['docNum','system','module','iuvPackage','intendedUse'];
-  if(docType==='workflow') required.push('workflowName','site');
+  if(docType==='workflow') required.push('workflowName');
   for(const id of required){if(!document.getElementById(id).value.trim())return false;}
+  if(docType==='workflow'&&!getSiteValue())return false;
   return (docType==='module'?settings:steps).length>0;
 }
 
 // ── JSON ────────────────────────────────────────────────────────────────────
+
+function getSiteValue(){
+  const sel=document.getElementById('site');
+  if(!sel)return'';
+  const selected=[...sel.selectedOptions].map(o=>o.value);
+  return selected.join(', ');
+}
+function setSiteValue(val){
+  const sel=document.getElementById('site');
+  if(!sel||!val)return;
+  const vals=val.split(', ');
+  [...sel.options].forEach(o=>{ o.selected=vals.includes(o.value); });
+}
+
 function collectData(){
   return{
     docType,
@@ -752,7 +772,7 @@ function collectData(){
       system:document.getElementById('system').value,
       module:document.getElementById('module').value,
       workflowName:document.getElementById('workflowName').value,
-      site:document.getElementById('site').value,
+      site:getSiteValue(),
       iuvPackage:document.getElementById('iuvPackage').value,
       valPlan:document.getElementById('valPlan').value,
       author:document.getElementById('author').value,
@@ -786,10 +806,11 @@ function loadJSON(e){
 function populateForm(d){
   if(d.docType){selectType(d.docType);confirmType();}
   const h=d.header||{};
-  ['docNum','revision','effectiveDate','system','module','workflowName','site','iuvPackage',
+  ['docNum','revision','effectiveDate','system','module','workflowName','iuvPackage',
    'valPlan','author','gxpClass','intendedUse','esigNote','partEleven','supersedes','iuvRef2']
   .forEach(id=>{const el=document.getElementById(id);if(el&&h[id]!==undefined)el.value=h[id];});
   updateDocId();
+  if(h.site)setSiteValue(h.site);
   const ass=document.getElementById('adminScopeStatement');
   if(ass&&d.adminScopeStatement)ass.value=d.adminScopeStatement;
   document.getElementById('settingsContainer').innerHTML='';settings=[];sc=0;
@@ -891,7 +912,7 @@ async function buildConfigSpec(data){
         })],
         spacing:{before:80,after:60}
       }));
-      imgChildren.push(p(a('Figure 1: '+h.workflowName+(h.site?' — '+h.site+' Site':'')+' — MasterControl configured workflow as of '+(h.effectiveDate||'[effective date]'),{size:16,italic:true}),{after:0}));
+      imgChildren.push(p(a('Figure 1: '+h.workflowName+(h.site?' — '+h.site+(h.site.includes(',')?' Sites':' Site'):'')+' — MasterControl configured workflow as of '+(h.effectiveDate||'[effective date]'),{size:16,italic:true}),{after:0}));
     } else {
       imgChildren.push(new Table({
         width:{size:W_CS,type:WidthType.DXA},columnWidths:[W_CS],layout:TableLayoutType.FIXED,
@@ -934,7 +955,7 @@ async function buildConfigSpec(data){
           children:[p(a('Step '+s.num+':   '+s.name+(s.stepType?' ('+s.stepType+')':''),{bold:true,size:18}),{after:0})]
         })]}),
         ...[
-          ['Branch / Scope:',s.branch==='tier1'?'Tier 1 path only':s.branch==='tier2'?'Tier 2 path only':'All paths'],
+          ['Branch / Scope:',s.branch||'All paths'],
           ['Assigned To:',s.assignedTo||''],
           ['Reassign Authority:',s.reassignAuth||''],
           ['E-Signature:',s.eSig||'Yes'],
@@ -1011,7 +1032,7 @@ async function buildConfigSpec(data){
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
   const a2=document.createElement('a');a2.href=url;
-  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site:''):h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
+  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site.replace(/,\s*/g,'-').replace(/\s+/g,'_'):''):h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
   a2.download=fname;a2.click();URL.revokeObjectURL(url);
 }
 
@@ -1021,7 +1042,7 @@ async function buildIUVPackage(data){
     HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
-  const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('CS-',''));
+  const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('SCS-',''));
   const csRef=h.docNum;
   const changeNote='Initial release – '+csRef;
 
@@ -1133,29 +1154,31 @@ async function buildIUVPackage(data){
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
   const a2=document.createElement('a');a2.href=url;
-  const fname=iuvDocNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site:''):h.module.replace(/\s+/g,'_'))+'_IUV_Package.docx';
+  const fname=iuvDocNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site.replace(/,\s*/g,'-').replace(/\s+/g,'_'):''):h.module.replace(/\s+/g,'_'))+'_IUV_Package.docx';
   a2.download=fname;a2.click();URL.revokeObjectURL(url);
 }
 
 // ── Document Number Counter System ─────────────────────────────────────────
 // Prefix map: derive from docType + module selection
 const PREFIX_MAP = {
-  'workflow:Documents':        'CS-DOC-WF',
-  'workflow:Training':         'CS-TRN-WF',
-  'workflow:AQEM':             'CS-AQEM-WF',
-  'workflow:Supplier':         'CS-SUP-WF',
-  'workflow:Audit':            'CS-AUD-WF',
-  'workflow:Risk':             'CS-RISK-WF',
-  'workflow:Production Records':'CS-PROD-WF',
-  'workflow:System / Security':'CS-SYS-WF',
-  'module:Documents':          'CS-DOC',
-  'module:Training':           'CS-TRN',
-  'module:AQEM':               'CS-AQEM',
-  'module:Supplier':           'CS-SUP',
-  'module:Audit':              'CS-AUD',
-  'module:Risk':               'CS-RISK',
-  'module:Production Records': 'CS-PROD',
-  'module:System / Security':  'CS-SYS',
+  'workflow:Documents':        'SCS-DOC-WF',
+  'workflow:Training':         'SCS-TRN-WF',
+  'workflow:Process':          'SCS-PROC-WF',
+  'workflow:AQEM':             'SCS-AQEM-WF',
+  'workflow:Supplier':         'SCS-SUP-WF',
+  'workflow:Audit':            'SCS-AUD-WF',
+  'workflow:Risk':             'SCS-RISK-WF',
+  'workflow:Production Records':'SCS-PROD-WF',
+  'workflow:System / Security':'SCS-SYS-WF',
+  'module:Documents':          'SCS-DOC',
+  'module:Training':           'SCS-TRN',
+  'module:Process':            'SCS-PROC',
+  'module:AQEM':               'SCS-AQEM',
+  'module:Supplier':           'SCS-SUP',
+  'module:Audit':              'SCS-AUD',
+  'module:Risk':               'SCS-RISK',
+  'module:Production Records': 'SCS-PROD',
+  'module:System / Security':  'SCS-SYS',
 };
 
 const COUNTERS_KEY = 'cs_doc_counters';
@@ -1187,7 +1210,7 @@ function incrementCounter(prefix) {
 function derivePrefix() {
   const type = docType || 'module';
   const mod = document.getElementById('module').value || 'Documents';
-  return PREFIX_MAP[type + ':' + mod] || ('CS-' + mod.toUpperCase().replace(/[^A-Z]/g,'-').replace(/-+/g,'-').slice(0,6));
+  return PREFIX_MAP[type + ':' + mod] || ('SCS-' + mod.toUpperCase().replace(/[^A-Z]/g,'-').replace(/-+/g,'-').slice(0,6));
 }
 
 function formatDocNum(prefix, num) {
