@@ -41,7 +41,7 @@ body{font-family:var(--sans);background:var(--surface);color:var(--ink);min-heig
 .type-chooser{max-width:880px;margin:0 auto;padding:40px 28px;}
 .chooser-title{font-size:22px;font-weight:600;margin-bottom:8px;}
 .chooser-sub{font-size:14px;color:var(--ink-muted);margin-bottom:32px;}
-.type-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.type-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
 .type-card{border:2px solid var(--border);border-radius:var(--rl);padding:28px 24px;cursor:pointer;transition:all .2s;background:white;}
 .type-card:hover{border-color:var(--accent-mid);background:var(--accent-light);box-shadow:0 4px 16px rgba(92,61,143,.1);}
 .type-card.selected{border-color:var(--accent);background:var(--accent-light);}
@@ -237,6 +237,16 @@ textarea{resize:vertical;min-height:68px;}
     </div>
   </div>
   <div style="margin-top:24px;text-align:right">
+    <div class="type-card" id="card-aqem" onclick="selectType('aqem')">
+      <div class="type-icon">⚙️</div>
+      <div class="type-label">AQEM Workflow Config Spec</div>
+      <div class="type-desc">For AQEM (Advanced Quality Event Management) workflows. Includes conditional routing, conditional display sections, VoD coverage, user group scoping, required fields, and data mapping for linked events.</div>
+      <div class="type-docs">
+        <span class="type-badge">VoD Coverage</span>
+        <span class="type-badge">Conditional Logic</span>
+        <span class="type-badge">Data Mapping</span>
+      </div>
+    </div>
     <button class="btn btn-primary" onclick="confirmType()" id="typeNextBtn" style="opacity:.4;pointer-events:none">Continue →</button>
   </div>
 </div>
@@ -261,11 +271,15 @@ textarea{resize:vertical;min-height:68px;}
       <div class="field"><label class="lbl">Revision</label><input type="text" id="revision" value="1.0"></div>
       <div class="field"><label class="lbl">Effective Date</label><input type="date" id="effectiveDate"></div>
     </div>
-    <div class="fg">
+    <div class="fg" id="moduleRow">
       <div class="field"><label class="lbl">System <span class="req">*</span></label><input type="text" id="system" value="MasterControl"></div>
       <div class="field"><label class="lbl">Module <span class="req">*</span></label>
         <select id="module"><option value="">— Select —</option><option>Documents</option><option>Training</option><option>Process</option><option>AQEM</option><option>Supplier</option><option>Audit</option><option>Risk</option><option>Production Records</option><option>System / Security</option></select>
       </div>
+    </div>
+    <div id="aqemModuleLabel" style="display:none;padding:6px 0 10px 0">
+      <span style="font-size:10px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em">Module</span><br>
+      <span style="font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-light);padding:4px 12px;border-radius:var(--r);display:inline-block;margin-top:4px">AQEM — Advanced Quality Event Management</span>
     </div>
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
@@ -274,7 +288,7 @@ textarea{resize:vertical;min-height:68px;}
       </div>
     </div>
     <div class="fg">
-      <div class="field"><label class="lbl">IUV Package # <span class="req">*</span></label><input type="text" id="iuvPackage" placeholder="IUV-DOC-001"></div>
+      <div class="field"><label class="lbl">IUV Package # <span class="req">*</span></label><input type="text" id="iuvPackage" placeholder="IUV-DOC-001" oninput="this.dataset.manualEdit='true'"></div>
       <div class="field"><label class="lbl">Related Validation Plan</label><input type="text" id="valPlan" value="PLAN-0028 MasterControl CSA Validation Plan"></div>
     </div>
     <div class="fg">
@@ -377,6 +391,75 @@ textarea{resize:vertical;min-height:68px;}
           <label class="lbl">Administrative Steps Scope Statement</label>
           <textarea id="adminScopeStatement" rows="3">The following steps are classified as Administrative and are excluded from IUV scope: [list admin steps]. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity. Configuration of these steps does not require IUV.</textarea>
         </div>
+      </div>
+    </div>
+    <div class="pnav"><button class="btn btn-secondary" onclick="goTo(2)">← Back</button><button class="btn btn-primary" onclick="goTo(4)">Next: Export →</button></div>
+  </div>
+
+  </div>
+
+  <!-- AQEM Workflow section -->
+  <div id="aqemSection" style="display:none">
+
+  <!-- Panel A: Workflow Map Image -->
+  <div class="panel active" id="aqemPanelA">
+    <div class="ph"><div class="pnum">4a</div><div><div class="ptitle">Workflow Map</div><div class="pdesc">Upload the AQEM workflow image from MasterControl — it will be embedded in the Config Spec</div></div></div>
+    <div class="pb">
+      <div class="notice ni" style="margin-bottom:14px">Export the workflow image from MasterControl. Use VoD to generate a validation report if available — you will reference it in the VoD summary below.</div>
+      <div class="field" style="margin-bottom:14px">
+        <label class="lbl">Workflow Image</label>
+        <input type="file" id="aqemImageFile" accept="image/*" onchange="handleAqemImage(event)" style="font-size:13px;color:var(--ink-muted)">
+      </div>
+      <div id="aqemImagePreview" style="display:none;margin-top:12px">
+        <img id="aqemImageEl" style="max-width:100%;border:1px solid var(--border-soft);border-radius:var(--r);background:white;padding:8px" alt="AQEM workflow map">
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:6px" id="aqemImageInfo"></div>
+        <button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="clearAqemImage()">Remove image</button>
+      </div>
+      <div id="aqemImagePlaceholder" style="border:1.5px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;color:var(--ink-muted);font-size:13px;margin-top:4px">
+        No image uploaded — document will include a placeholder
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel B: VoD Evidence Summary -->
+  <div class="panel active" id="aqemPanelB">
+    <div class="ph"><div class="pnum">4b</div><div><div class="ptitle">VoD Evidence Summary</div><div class="pdesc">Document the Validation on Demand report(s) used as primary IUV evidence for this workflow</div></div></div>
+    <div class="pb">
+      <div class="notice ni" style="margin-bottom:14px">VoD reports can serve as primary IUV evidence for steps they cover. Document the report reference here. Manual IUV steps will reference this report where applicable.</div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">VoD Report Reference</label>
+          <input type="text" id="vodReportRef" placeholder="e.g. VoD-AQEM-DEV-001"></div>
+        <div class="field"><label class="lbl">VoD Execution Date</label>
+          <input type="date" id="vodExecutionDate"></div>
+        <div class="field"><label class="lbl">MasterControl Version</label>
+          <input type="text" id="vodMcVersion" placeholder="e.g. 2025.1.0"></div>
+      </div>
+      <div class="fg">
+        <div class="field"><label class="lbl">VoD Scope / Steps Covered</label>
+          <textarea id="vodScope" rows="3" placeholder="Describe which steps and logic the VoD report covers. e.g. Steps 1–5 routing logic, escalation paths, e-signature enforcement. Conditional display sections not covered by VoD."></textarea></div>
+        <div class="field"><label class="lbl">VoD Limitations / Gaps</label>
+          <textarea id="vodGaps" rows="3" placeholder="Document what VoD does not cover and requires manual IUV. e.g. Role assignment verification, conditional section display validation, required field enforcement."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel C: AQEM Step Inventory -->
+  <div class="panel active" id="aqemPanelC">
+    <div class="ph"><div class="pnum">4c</div><div><div class="ptitle">Step Inventory &amp; Classification</div><div class="pdesc">Add every step. Risk-Relevant steps get full detail fields including conditional logic, VoD coverage, and data mapping.</div></div></div>
+    <div class="pb">
+      <div class="notice ni" style="margin-bottom:14px">Include all steps — approvals, collaborations, notifications, and escalation paths. Classify each as Risk-Relevant or Administrative.</div>
+      <div id="aqemStepsContainer" class="cards"></div>
+      <button class="add-btn" onclick="addAqemStep()"><span style="font-size:16px;line-height:1">+</span> Add AQEM Step</button>
+    </div>
+  </div>
+
+  <!-- Panel D: Administrative Scope Statement -->
+  <div class="panel active" id="aqemPanelD">
+    <div class="ph"><div class="pnum">4d</div><div><div class="ptitle">Administrative Scope Statement</div><div class="pdesc">Statement covering all Administrative steps excluded from IUV scope</div></div></div>
+    <div class="pb">
+      <div class="field">
+        <label class="lbl">Administrative Steps Scope Statement</label>
+        <textarea id="aqemAdminScope" rows="3">The following steps are classified as Administrative and are excluded from IUV scope: [list admin steps]. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity. Configuration of these steps does not require IUV.</textarea>
       </div>
     </div>
     <div class="pnav"><button class="btn btn-secondary" onclick="goTo(2)">← Back</button><button class="btn btn-primary" onclick="goTo(4)">Next: Export →</button></div>
@@ -496,6 +579,7 @@ function selectType(type) {
   docType = type;
   document.getElementById('card-module').classList.toggle('selected', type==='module');
   document.getElementById('card-workflow').classList.toggle('selected', type==='workflow');
+  document.getElementById('card-aqem').classList.toggle('selected', type==='aqem');
   const btn = document.getElementById('typeNextBtn');
   btn.style.opacity='1'; btn.style.pointerEvents='auto';
 }
@@ -503,14 +587,43 @@ function selectType(type) {
 function confirmType() {
   if(!docType) return;
   // Show/hide workflow-specific fields
-  document.getElementById('wfNameRow').style.display = docType==='workflow' ? 'grid' : 'none';
+  document.getElementById('wfNameRow').style.display = (docType==='workflow'||docType==='aqem') ? 'grid' : 'none';
+  // For AQEM: hide module dropdown row, show fixed label; clear workflow name placeholder
+  const moduleRow = document.getElementById('moduleRow');
+  if (moduleRow) moduleRow.style.display = docType==='aqem' ? 'none' : 'grid';
+  const aqemModuleLabel = document.getElementById('aqemModuleLabel');
+  if (aqemModuleLabel) aqemModuleLabel.style.display = docType==='aqem' ? 'block' : 'none';
+  // Force module value to AQEM for aqem type so prefix map works
+  if (docType === 'aqem') {
+    const mod = document.getElementById('module');
+    if (mod) mod.value = 'AQEM';
+  }
+  // Clear workflow name placeholder for aqem
+  const wfName = document.getElementById('workflowName');
+  if (wfName) wfName.placeholder = docType==='aqem' ? 'e.g. Deviation, CAPA, Complaint Investigation' : 'DCR with Training';
   // Show correct config section
   document.getElementById('moduleSection').style.display = docType==='module' ? 'block' : 'none';
   document.getElementById('workflowSection').style.display = docType==='workflow' ? 'block' : 'none';
+  document.getElementById('aqemSection').style.display = docType==='aqem' ? 'block' : 'none';
   // Update step 4 label
   document.getElementById('step4label').textContent = docType==='module' ? '4 · Settings' : '4 · Steps';
   // Update GxP class default
   document.getElementById('gxpClass').value = docType==='module' ? 'GxP — Risk-Relevant Module' : 'GxP — Risk-Relevant Workflow';
+  // For standard workflow: filter module dropdown to Documents and Process only
+  const modSel = document.getElementById('module');
+  if (modSel) {
+    [...modSel.options].forEach(opt => {
+      if (docType === 'workflow') {
+        opt.style.display = (opt.value===''||opt.value==='Documents'||opt.value==='Process') ? '' : 'none';
+      } else {
+        opt.style.display = '';
+      }
+    });
+    // Reset to blank if current value not in allowed set
+    if (docType === 'workflow' && modSel.value !== '' && modSel.value !== 'Documents' && modSel.value !== 'Process') {
+      modSel.value = '';
+    }
+  }
   goTo(1);
 }
 
@@ -648,7 +761,7 @@ function renderStep(s) {
         <div class="field"><label class="lbl">Step Type</label>
           <select onchange="updW(${s.id},'stepType',this.value)">
             <option value="">— Select —</option>
-            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation', 'Parallel'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
+            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
           </select></div>
         <div class="field"><label class="lbl">Risk Classification</label>
           <select onchange="updW(${s.id},'riskClass',this.value);rerenderStepRcBadge(${s.id});toggleRRDetails(${s.id})">
@@ -676,7 +789,7 @@ function renderStep(s) {
           <div class="field"><label class="lbl">E-Signature</label>
             <select onchange="updW(${s.id},'eSig',this.value)">${['Yes','N/A'].map(v=>`<option${s.eSig===v?' selected':''}>${v}</option>`).join('')}</select></div>
           <div class="field"><label class="lbl">IUV Reference</label>
-            <input type="text" value="${s.iuvRef||''}" placeholder="e.g. Step 1 or N/A" oninput="updW(${s.id},'iuvRef',this.value)"></div>
+            <input type="text" value="${s.iuvRef||''}" placeholder="e.g. Step 1.1 or N/A" oninput="updW(${s.id},'iuvRef',this.value)"></div>
         </div>
         <div class="field"><label class="lbl">GxP Rationale <span class="req">*</span></label>
           <select onchange="updWRat(${s.id},this.value)">${ratOpts}</select>
@@ -721,14 +834,249 @@ function moveW(id,dir){const idx=steps.findIndex(s=>s.id===id),ni=idx+dir;if(ni<
 function removeW(id){if(!confirm('Remove this step?'))return;steps=steps.filter(s=>s.id!==id);const el=document.getElementById('wcard-'+id);if(el)el.remove();}
 
 
+
+// ── AQEM state ──────────────────────────────────────────────────────────────
+let aqemSteps = [];
+let astc = 0;
+let aqemImageDataUrl = null;
+
+const VOD_OPTIONS = [
+  {v:'VoD Only', l:'VoD Only — fully covered by VoD report'},
+  {v:'VoD + Spot Check', l:'VoD + Spot Check — VoD primary, one manual confirmation'},
+  {v:'Manual IUV', l:'Manual IUV — not covered by VoD, full manual step required'},
+  {v:'N/A', l:'N/A — Administrative step, no IUV required'},
+  {v:'custom', l:'✏️  Custom coverage note...'},
+];
+
+function handleAqemImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    aqemImageDataUrl = e.target.result;
+    const img = document.getElementById('aqemImageEl');
+    img.src = aqemImageDataUrl;
+    img.onload = () => {
+      document.getElementById('aqemImageInfo').textContent = img.naturalWidth + ' × ' + img.naturalHeight + 'px — ' + file.name;
+    };
+    document.getElementById('aqemImagePreview').style.display = 'block';
+    document.getElementById('aqemImagePlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearAqemImage() {
+  aqemImageDataUrl = null;
+  document.getElementById('aqemImageFile').value = '';
+  document.getElementById('aqemImagePreview').style.display = 'none';
+  document.getElementById('aqemImagePlaceholder').style.display = 'block';
+}
+
+function addAqemStep(data) {
+  const id = ++astc;
+  const s = data || {
+    id, num: aqemSteps.length + 1, name: '', stepType: '', branch: '', riskClass: 'Risk-Relevant',
+    assignedTo: '', eSig: 'Yes', ratPreset: '', ratCustom: '',
+    condRouting: '', condDisplay: '',
+    vodCoverage: 'Manual IUV', vodCustom: '',
+    scopingNote: '', requiredFields: '', dataMapping: '', iuvRef: ''
+  };
+  if (!data) s.id = id;
+  aqemSteps.push(s);
+  renderAqemStep(s);
+}
+
+function renderAqemStep(s) {
+  const c = document.getElementById('aqemStepsContainer');
+  const div = document.createElement('div');
+  div.className = 'card'; div.id = 'acard-' + s.id;
+  const isRR = s.riskClass === 'Risk-Relevant';
+  const rcBadge = isRR ? '<span class="card-badge b-rr">Risk-Relevant</span>' : '<span class="card-badge b-adm">Administrative</span>';
+  const vodBadgeColor = s.vodCoverage === 'VoD Only' ? 'b-rr' : s.vodCoverage === 'VoD + Spot Check' ? 'b-t2' : s.vodCoverage === 'Manual IUV' ? 'b-all' : 'b-adm';
+  const vodBadge = isRR ? `<span class="card-badge ${vodBadgeColor}">${s.vodCoverage||'Manual IUV'}</span>` : '';
+  const ratOpts = RATIONALE_PRESETS.map(r => `<option value="${r.v}"${s.ratPreset===r.v?' selected':''}>${r.l}</option>`).join('');
+  const showCustomRat = s.ratPreset === 'custom' || (s.ratCustom && !RATIONALE_PRESETS.find(r => r.v === s.ratPreset && r.v !== ''));
+  const vodOpts = VOD_OPTIONS.map(o => `<option value="${o.v}"${s.vodCoverage===o.v?' selected':''}>${o.l}</option>`).join('');
+  const showVodCustom = s.vodCoverage === 'custom';
+  const detailDisplay = isRR ? 'block' : 'none';
+
+  div.innerHTML = `
+    <div class="card-hdr" onclick="toggleCard('acard-${s.id}')">
+      <div class="card-num">${s.num}</div>
+      ${rcBadge}${vodBadge}
+      <div class="card-preview${s.name?'':' ph-txt'}" id="aprev-${s.id}">${s.name||'Click to edit AQEM step'}</div>
+      <div class="expand-icon">▼</div>
+    </div>
+    <div class="card-body">
+      <!-- Core fields (all steps) -->
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Step Name <span class="req">*</span></label>
+          <input type="text" value="${s.name}" placeholder="e.g. Investigation" oninput="updA(${s.id},'name',this.value);updAPrev(${s.id})"></div>
+        <div class="field"><label class="lbl">Step Type</label>
+          <select onchange="updA(${s.id},'stepType',this.value)">
+            <option value="">— Select —</option>
+            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
+          </select></div>
+        <div class="field"><label class="lbl">Risk Classification</label>
+          <select onchange="updA(${s.id},'riskClass',this.value);rerenderAqemRcBadge(${s.id});toggleAqemDetails(${s.id})">
+            <option value="Risk-Relevant"${isRR?' selected':''}>Risk-Relevant</option>
+            <option value="Administrative"${!isRR?' selected':''}>Administrative</option>
+          </select></div>
+      </div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Branch / Scope</label>
+          <input type="text" value="${s.branch||''}" placeholder="e.g. All paths, Deviation path" oninput="updA(${s.id},'branch',this.value)"></div>
+        <div class="field"><label class="lbl">E-Signature</label>
+          <select onchange="updA(${s.id},'eSig',this.value)">${['Yes','N/A'].map(v=>`<option${s.eSig===v?' selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label class="lbl">Display Number</label>
+          <input type="text" value="${s.num}" oninput="updA(${s.id},'num',this.value)"></div>
+      </div>
+
+      <!-- Risk-Relevant detail fields -->
+      <div id="arr-detail-${s.id}" style="display:${detailDisplay}">
+        <hr style="border:none;border-top:1px solid var(--border-soft);margin:10px 0">
+
+        <!-- Assignment -->
+        <div class="fg">
+          <div class="field"><label class="lbl">Assigned To</label>
+            <input type="text" value="${s.assignedTo||''}" placeholder="e.g. QA Approver, CAPA Owner role" oninput="updA(${s.id},'assignedTo',this.value)"></div>
+          <div class="field"><label class="lbl">IUV Reference</label>
+            <input type="text" value="${s.iuvRef||''}" placeholder="e.g. Step 3.1 or VoD" oninput="updA(${s.id},'iuvRef',this.value)"></div>
+        </div>
+
+        <!-- GxP Rationale -->
+        <div class="field" style="margin-bottom:10px"><label class="lbl">GxP Rationale <span class="req">*</span></label>
+          <select onchange="updARat(${s.id},this.value)">${ratOpts}</select>
+          <textarea class="rat-custom${showCustomRat?' visible':''}" id="arat-${s.id}"
+            placeholder="Why is this step configured this way from a GxP compliance perspective?"
+            oninput="updA(${s.id},'ratCustom',this.value)">${s.ratCustom}</textarea>
+        </div>
+
+        <!-- VoD Coverage -->
+        <div class="fg">
+          <div class="field"><label class="lbl">VoD Coverage</label>
+            <select onchange="updA(${s.id},'vodCoverage',this.value);rerenderVodBadge(${s.id});toggleVodCustom(${s.id})">${vodOpts}</select>
+            <textarea class="rat-custom${showVodCustom?' visible':''}" id="avod-${s.id}"
+              placeholder="Describe custom VoD coverage for this step..."
+              oninput="updA(${s.id},'vodCustom',this.value)">${s.vodCustom||''}</textarea>
+          </div>
+          <div class="field"><label class="lbl">Required Fields / Mandatory Completion</label>
+            <textarea id="areq-${s.id}" rows="2"
+              placeholder="e.g. Root Cause Category (required), Description (required min 50 chars), CAPA link required if Severity = Critical"
+              oninput="updA(${s.id},'requiredFields',this.value)">${s.requiredFields||''}</textarea>
+          </div>
+        </div>
+
+        <!-- Conditional Logic -->
+        <div style="background:var(--surface-2);border-radius:var(--r);padding:12px;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Conditional Logic</div>
+          <div class="fg" style="margin-bottom:0">
+            <div class="field"><label class="lbl">Conditional Routing</label>
+              <textarea id="acr-${s.id}" rows="3"
+                placeholder="If [field] = [Value A] → routes to Step X&#10;If [field] = [Value B] → routes to Step Y&#10;If Severity = Critical → escalates to QA Director"
+                oninput="updA(${s.id},'condRouting',this.value)">${s.condRouting||''}</textarea></div>
+            <div class="field"><label class="lbl">Conditional Display (Sections)</label>
+              <textarea id="acd-${s.id}" rows="3"
+                placeholder="[Section Name] displayed only when [field] = [Value A]&#10;[Section Name] hidden when [field] = B or C&#10;CAPA Section shown only if Disposition = CAPA Required"
+                oninput="updA(${s.id},'condDisplay',this.value)">${s.condDisplay||''}</textarea></div>
+          </div>
+        </div>
+
+        <!-- Sites/Depts/User Groups + Data Mapping -->
+        <div class="fg">
+          <div class="field"><label class="lbl">Sites / Departments / User Groups Scoping</label>
+            <textarea id="ascope-${s.id}" rows="2"
+              placeholder="e.g. Assigned to QA Approver group — members: [list]. Scoped to initiating site only. Department routing: routes to Initiator's department manager."
+              oninput="updA(${s.id},'scopingNote',this.value)">${s.scopingNote||''}</textarea></div>
+          <div class="field"><label class="lbl">Data Mapping (linked events)</label>
+            <textarea id="admap-${s.id}" rows="2"
+              placeholder="e.g. If CAPA launched from this Deviation: Event ID → CAPA Source Reference; Description → CAPA Background; Severity → CAPA Priority"
+              oninput="updA(${s.id},'dataMapping',this.value)">${s.dataMapping||''}</textarea></div>
+        </div>
+
+      </div><!-- /rr-detail -->
+
+      <div class="card-actions">
+        <button class="btn btn-ghost" onclick="moveA(${s.id},-1)">↑</button>
+        <button class="btn btn-ghost" onclick="moveA(${s.id},1)">↓</button>
+        <button class="btn btn-danger" onclick="removeA(${s.id})">Remove</button>
+      </div>
+    </div>`;
+  c.appendChild(div);
+  div.classList.add('open');
+}
+
+function updA(id,f,v){const s=aqemSteps.find(x=>x.id===id);if(s)s[f]=v;}
+function updAPrev(id){const s=aqemSteps.find(x=>x.id===id),el=document.getElementById('aprev-'+id);if(el&&s){el.textContent=s.name||'Click to edit AQEM step';el.className='card-preview'+(s.name?'':' ph-txt');}}
+function updARat(id,v){const s=aqemSteps.find(x=>x.id===id);if(s)s.ratPreset=v;const cf=document.getElementById('arat-'+id);if(cf){if(v==='custom'||v===''){cf.classList.add('visible');}else{cf.classList.remove('visible');if(s)s.ratCustom='';}}}
+function getARat(s){if(s.ratPreset==='custom'||s.ratPreset==='')return s.ratCustom;return s.ratPreset;}
+function toggleVodCustom(id){const s=aqemSteps.find(x=>x.id===id);const cf=document.getElementById('avod-'+id);if(cf)cf.classList.toggle('visible',s&&s.vodCoverage==='custom');}
+function toggleAqemDetails(id){const s=aqemSteps.find(x=>x.id===id);const el=document.getElementById('arr-detail-'+id);if(el&&s)el.style.display=s.riskClass==='Risk-Relevant'?'block':'none';}
+function rerenderAqemRcBadge(id){
+  const s=aqemSteps.find(x=>x.id===id),card=document.getElementById('acard-'+id);
+  if(!s||!card)return;
+  const badges=card.querySelectorAll('.card-badge');
+  if(badges[0]){const isRR=s.riskClass==='Risk-Relevant';badges[0].className='card-badge '+(isRR?'b-rr':'b-adm');badges[0].textContent=isRR?'Risk-Relevant':'Administrative';}
+}
+function rerenderVodBadge(id){
+  const s=aqemSteps.find(x=>x.id===id),card=document.getElementById('acard-'+id);
+  if(!s||!card)return;
+  const badges=card.querySelectorAll('.card-badge');
+  const b=badges[1];
+  if(b&&s.riskClass==='Risk-Relevant'){
+    const color=s.vodCoverage==='VoD Only'?'b-rr':s.vodCoverage==='VoD + Spot Check'?'b-t2':'b-all';
+    b.className='card-badge '+color;b.textContent=s.vodCoverage||'Manual IUV';
+  }
+}
+function moveA(id,dir){const idx=aqemSteps.findIndex(s=>s.id===id),ni=idx+dir;if(ni<0||ni>=aqemSteps.length)return;[aqemSteps[idx],aqemSteps[ni]]=[aqemSteps[ni],aqemSteps[idx]];const c=document.getElementById('aqemStepsContainer');c.innerHTML='';const sv=[...aqemSteps];aqemSteps=[];astc=0;sv.forEach(s=>addAqemStep(s));}
+function removeA(id){if(!confirm('Remove this step?'))return;aqemSteps=aqemSteps.filter(s=>s.id!==id);const el=document.getElementById('acard-'+id);if(el)el.remove();}
+
+
+// ── IUV Number Counter ───────────────────────────────────────────────────────
+const IUV_COUNTERS_KEY = 'cs_iuv_counters';
+
+function getIuvCounters() {
+  try { const r=localStorage.getItem(IUV_COUNTERS_KEY); return r?JSON.parse(r):{}; } catch{return{};}
+}
+function saveIuvCounters(c) {
+  try{localStorage.setItem(IUV_COUNTERS_KEY,JSON.stringify(c));}catch{}
+}
+function getIuvPrefix(docNum) {
+  // Strip SCS- prefix and replace with IUV-
+  // SCS-DOC-007      → IUV-DOC
+  // SCS-DOC-WF-007   → IUV-DOC-WF
+  // SCS-AQEM-WF-001  → IUV-AQEM-WF
+  if (!docNum) return 'IUV';
+  const stripped = docNum.replace(/^SCS-/, '').replace(/-\d+$/, '');
+  return 'IUV-' + stripped;
+}
+function getNextIuvNum(iuvPrefix) {
+  const counters = getIuvCounters();
+  return (counters[iuvPrefix] || 0) + 1;
+}
+function incrementIuvCounter(iuvPrefix) {
+  const counters = getIuvCounters();
+  counters[iuvPrefix] = (counters[iuvPrefix] || 0) + 1;
+  saveIuvCounters(counters);
+}
+function suggestIuvNum() {
+  const iuvInput = document.getElementById('iuvPackage');
+  if (!iuvInput || iuvInput.dataset.manualEdit) return;
+  const docNum = document.getElementById('docNum').value;
+  const iuvPrefix = getIuvPrefix(docNum);
+  const num = getNextIuvNum(iuvPrefix);
+  iuvInput.value = iuvPrefix + '-' + String(num).padStart(3, '0');
+  iuvInput.placeholder = iuvInput.value;
+}
+
 // ── Export Summary ──────────────────────────────────────────────────────────
 function buildExpSummary(){
   const num=document.getElementById('docNum').value||'—';
   const mod=document.getElementById('module').value||'—';
   const wf=document.getElementById('workflowName').value;
   const site=getSiteValue();
-  const items = docType==='module' ? settings : steps;
-  const rrCount = docType==='module' ? settings.filter(s=>s.riskClass==='Risk-Relevant').length : steps.length;
+  const items = docType==='module' ? settings : docType==='aqem' ? aqemSteps : steps;
+  const rrCount = docType==='module' ? settings.filter(s=>s.riskClass==='Risk-Relevant').length : docType==='aqem' ? aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length : steps.length;
   document.getElementById('expSummary').innerHTML=`
     <div><div class="es-lbl">Document</div><div class="es-val" style="font-size:12px">${num}</div></div>
     <div><div class="es-lbl">Type</div><div class="es-val" style="font-size:12px">${docType==='module'?mod:(wf||'—')+' / '+(site||'—')}</div></div>
@@ -742,7 +1090,7 @@ function validate(){
   if(docType==='workflow') required.push('workflowName');
   for(const id of required){if(!document.getElementById(id).value.trim())return false;}
   if(docType==='workflow'&&!getSiteValue())return false;
-  return (docType==='module'?settings:steps).length>0;
+  return (docType==='module'?settings:docType==='aqem'?aqemSteps:steps).length>0;
 }
 
 // ── JSON ────────────────────────────────────────────────────────────────────
@@ -763,8 +1111,14 @@ function setSiteValue(val){
 function collectData(){
   return{
     docType,
-    wfImageDataUrl: docType==='workflow' ? wfImageDataUrl : null,
-    adminScopeStatement: docType==='workflow' ? (document.getElementById('adminScopeStatement')||{}).value||'' : '',
+    wfImageDataUrl: docType==='workflow' ? wfImageDataUrl : docType==='aqem' ? aqemImageDataUrl : null,
+    adminScopeStatement: docType==='workflow' ? (document.getElementById('adminScopeStatement')||{}).value||'' : docType==='aqem' ? (document.getElementById('aqemAdminScope')||{}).value||'' : '',
+    aqemSteps: aqemSteps.map(s=>({...s,ratResolved:getARat(s)})),
+    vodReportRef: (document.getElementById('vodReportRef')||{}).value||'',
+    vodExecutionDate: (document.getElementById('vodExecutionDate')||{}).value||'',
+    vodMcVersion: (document.getElementById('vodMcVersion')||{}).value||'',
+    vodScope: (document.getElementById('vodScope')||{}).value||'',
+    vodGaps: (document.getElementById('vodGaps')||{}).value||'',
     header:{
       docNum:document.getElementById('docNum').value,
       revision:document.getElementById('revision').value,
@@ -815,8 +1169,15 @@ function populateForm(d){
   if(ass&&d.adminScopeStatement)ass.value=d.adminScopeStatement;
   document.getElementById('settingsContainer').innerHTML='';settings=[];sc=0;
   document.getElementById('stepsContainer').innerHTML='';steps=[];stc=0;
+  document.getElementById('aqemStepsContainer').innerHTML='';aqemSteps=[];astc=0;
   (d.settings||[]).forEach(s=>addSetting(s));
   (d.steps||[]).forEach(s=>addStep(s));
+  (d.aqemSteps||[]).forEach(s=>addAqemStep(s));
+  ['vodReportRef','vodExecutionDate','vodMcVersion','vodScope','vodGaps'].forEach(id=>{
+    const el=document.getElementById(id);if(el&&d[id]!==undefined)el.value=d[id];
+  });
+  const aqemAdminScopeEl=document.getElementById('aqemAdminScope');
+  if(aqemAdminScopeEl&&d.docType==='aqem'&&d.adminScopeStatement)aqemAdminScopeEl.value=d.adminScopeStatement;
   goTo(0);
 }
 
@@ -875,17 +1236,163 @@ function getDocxHelpers(){
       new TableRow({children:[dc(h.effectiveDate||"MM/DD/YY",CHW[0]),dc(h.revision||"1.0",CHW[1]),dc(h.author||"",CHW[2]),dc(note,CHW[3])]}),
     ]});
   };
+  // ── Header table (repeats every page) ────────────────────────────────────
+  // Template: 8 cols [1962,960,960,960,960,960,960,2520] total 10242
+  // Row 0: logo cell | title (span 6) | Doc#/Rev (right)
+  // Row 1: logo cell | System | val | Module | val | Version | val | Site(s)
+  // Row 2+: metadata rows
+  const HW=[1962,960,960,960,960,960,960,2520];
+  const hthin={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"};
+  const hallThin={top:hthin,bottom:hthin,left:hthin,right:hthin};
+  const hcm=()=>({top:60,bottom:60,left:100,right:100});
+  const ha=(text,opts={})=>new TextRun({text:String(text||''),font:"Calibri",size:opts.size||18,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
+  const hp=(children,opts={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:opts.align||AlignmentType.LEFT,spacing:{before:0,after:0,line:240}});
+
+  // Logo cell — first column, rowSpan across all rows
+  function logoCell(rowSpan){
+    return new TableCell({
+      width:{size:HW[0],type:WidthType.DXA},
+      rowSpan,
+      shading:{fill:"FFFFFF",type:ShadingType.CLEAR},
+      borders:hallThin,margins:hcm(),
+      verticalAlign:VerticalAlign.CENTER,
+      children:[hp(ha("",{size:14}),{after:0})]
+    });
+  }
+  function hspan(text,spanCols,fill,bold,size){
+    const totalW=spanCols===6?5760:spanCols===3?2880:HW[spanCols]||HW[0];
+    return new TableCell({
+      width:{size:totalW,type:WidthType.DXA},
+      columnSpan:spanCols,
+      shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},
+      borders:hallThin,margins:hcm(),
+      verticalAlign:VerticalAlign.CENTER,
+      children:[hp(ha(text||"",{bold:bold||false,size:size||18}),{after:0})]
+    });
+  }
+  function hcell(text,w,fill,bold){
+    return new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:hallThin,margins:hcm(),verticalAlign:VerticalAlign.CENTER,children:[hp(ha(text||"",{bold:bold||false,size:16}),{after:0})]});
+  }
+  function hcell2(label,value,w,fill){
+    return new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:hallThin,margins:hcm(),verticalAlign:VerticalAlign.CENTER,
+      children:[hp([ha(label,{bold:true,size:16}),ha(" "+value,{size:16})],{after:0})]});
+  }
+
+  function makeDocHeader(h, docTypeLabel, iuvDocNum) {
+    const titleText = docTypeLabel==='IUV Package'
+      ? 'Title – IUV Package'
+      : docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'
+        ? 'Title – Workflow Configuration Specification'
+        : 'Title – Module Configuration Specification';
+    const docNum = iuvDocNum || h.docNum || '';
+    const site = h.site || '';
+    const module = h.module || '';
+    const workflowName = h.workflowName || '';
+    const displayTitle = workflowName ? (workflowName + (site ? ' — ' + site : '')) : (module || '');
+    const valPlan = h.valPlan || 'PLAN-0028 MasterControl CSA Validation Plan';
+    const iuvRef = iuvDocNum || h.iuvPackage || '';
+    const csRef = h.docNum || '';
+    const gxpClass = h.gxpClass || '';
+    const partEleven = h.partEleven || '';
+
+    // Row 0: logo | title + display name | Doc# / Rev
+    const row0 = new TableRow({children:[
+      logoCell(docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'?5:4),
+      hspan(titleText + (displayTitle ? '  —  ' + displayTitle : ''), 6, "FFFFFF", true, 18),
+      hcell2("Doc #: ", docNum, HW[7], "FFFFFF"),
+    ]});
+
+    // Row 1: System | val | Module | val | Version | val | Site(s)
+    const row1 = new TableRow({children:[
+      hcell("System:", HW[1], "FFFFFF", true),
+      hcell(h.system||"MasterControl", HW[2]),
+      hcell("Module:", HW[3], "FFFFFF", true),
+      hcell(module, HW[4]),
+      hcell("Revision:", HW[5], "FFFFFF", true),
+      hcell(h.revision||"1.0", HW[6]),
+      hcell2("Site(s): ", site, HW[7], "FFFFFF"),
+    ]});
+
+    const rows = [row0, row1];
+
+    if(docTypeLabel==='IUV Package'){
+      rows.push(new TableRow({children:[
+        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
+        hspan(valPlan, 3, "FFFFFF"),
+        hcell("Related CS:", 2880, "F2F2F2", true),
+        hspan(csRef, 3, "FFFFFF"),
+      ]}));
+    } else if(docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'){
+      rows.push(new TableRow({children:[
+        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
+        hspan(valPlan, 3, "FFFFFF"),
+        hcell("Parent Config Spec:", 2880, "F2F2F2", true),
+        hspan("", 3, "FFFFFF"),
+      ]}));
+      rows.push(new TableRow({children:[
+        hcell("", HW[0], "F2F2F2"),
+        hspan("", 3, "FFFFFF"),
+        hcell("Related IUV Package:", 2880, "F2F2F2", true),
+        hspan(iuvRef, 3, "FFFFFF"),
+      ]}));
+      rows.push(new TableRow({children:[
+        hcell("GxP Classification:", HW[0], "F2F2F2", true),
+        hspan(gxpClass, 3, "FFFFFF"),
+        hcell("21 CFR Part 11 / Annex 11:", 2880, "F2F2F2", true),
+        hspan(partEleven, 3, "FFFFFF"),
+      ]}));
+    } else {
+      rows.push(new TableRow({children:[
+        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
+        hspan(valPlan, 3, "FFFFFF"),
+        hcell("Related IUV Package:", 2880, "F2F2F2", true),
+        hspan(iuvRef, 3, "FFFFFF"),
+      ]}));
+      rows.push(new TableRow({children:[
+        hcell("GxP Classification:", HW[0], "F2F2F2", true),
+        hspan(gxpClass, 3, "FFFFFF"),
+        hcell("21 CFR Part 11 / Annex 11:", 2880, "F2F2F2", true),
+        hspan(partEleven, 3, "FFFFFF"),
+      ]}));
+    }
+
+    return new Table({
+      width:{size:10242,type:WidthType.DXA},
+      columnWidths:HW,
+      layout:TableLayoutType.FIXED,
+      rows,
+    });
+  }
+
+  // ── Footer (confidentiality + page number) ─────────────────────────────────
+  function makeFooter() {
+    return new Paragraph({
+      children:[
+        new TextRun({text:"CONFIDENTIAL — Property of the company. This information is proprietary and may not be copied or distributed without consent.		",font:"Calibri",size:14,italics:true,color:"808080"}),
+        new TextRun({children:[new docx.PageNumber()],font:"Calibri",size:14,color:"808080"}),
+        new TextRun({text:" of ",font:"Calibri",size:14,color:"808080"}),
+        new TextRun({children:[new docx.NumberOfPages()],font:"Calibri",size:14,color:"808080"}),
+      ],
+      alignment:AlignmentType.LEFT,
+      spacing:{before:0,after:0},
+    });
+  }
+
   return{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    PURPLE,HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_CS,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist};
+    PURPLE,HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_CS,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter};
 }
 
 // ── Config Spec builder — matched to corporate templates ─────────────────────
 async function buildConfigSpec(data){
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    HDR_FILL,LGRAY,BGRAY,MGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
+    HDR_FILL,LGRAY,BGRAY,MGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
+  const isAQEM=data.docType==='aqem';
   const changeNote='Initial Release ('+h.docNum+')';
+  const docTypeLabel=isAQEM?'AQEM Workflow Configuration Specification':isWF?'Workflow Configuration Specification':'Module Configuration Specification';
+  const pageHeader=makeDocHeader(h,docTypeLabel,h.iuvPackage);
+  const pageFooter=makeFooter();
 
   let configSection=[];
 
@@ -989,6 +1496,105 @@ async function buildConfigSpec(data){
       p(a(data.adminScopeStatement||('The following steps are classified as Administrative and excluded from IUV scope: '+adminSteps.map(s=>s.name||'Step '+s.num).join(', ')+'. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity.')),{after:0}),
       blank(),
     ];
+
+  } else if(data.docType==='aqem'){
+    // ── AQEM CONFIG SPEC ──
+    const imgChildren=[];
+    if(data.wfImageDataUrl){
+      const b64=data.wfImageDataUrl.split(',')[1];
+      const mimeMatch=data.wfImageDataUrl.match(/data:([^;]+);/);
+      const mime=mimeMatch?mimeMatch[1]:'image/png';
+      const imgType=mime.includes('jpeg')||mime.includes('jpg')?'jpg':'png';
+      const targetWidthEmu=5943600;
+      imgChildren.push(new Paragraph({
+        children:[new docx.ImageRun({
+          data:Uint8Array.from(atob(b64),c=>c.charCodeAt(0)),
+          transformation:{width:targetWidthEmu/914400*96,height:Math.round(targetWidthEmu*0.3/914400*96)},
+          type:imgType,
+        })],spacing:{before:80,after:60}
+      }));
+      imgChildren.push(p(a('Figure 1: '+h.workflowName+(h.site?' — '+h.site+(h.site.includes(',')?' Sites':' Site'):'')+' — MasterControl AQEM workflow as of '+(h.effectiveDate||'[effective date]'),{size:16,italic:true}),{after:0}));
+    } else {
+      imgChildren.push(new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:[W_CS],layout:TableLayoutType.FIXED,rows:[new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},shading:{fill:'FFF2CC',type:ShadingType.CLEAR},borders:allThin,margins:{top:100,bottom:100,left:140,right:140},children:[p(a('[AQEM workflow image — export from MasterControl and insert here]',{size:18,italic:true}),{after:0})]})]})]}));
+    }
+
+    // VoD Summary box
+    const vodBox=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:[2200,7965],layout:TableLayoutType.FIXED,rows:[
+      new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('VoD Evidence Summary',{bold:true,size:18}),{after:0})]})]})
+      ,...[
+        ['VoD Report Reference:',data.vodReportRef||'[Not provided]'],
+        ['Execution Date:',data.vodExecutionDate||'[Not provided]'],
+        ['MasterControl Version:',data.vodMcVersion||'[Not provided]'],
+        ['Steps / Logic Covered:',data.vodScope||'[Not documented]'],
+        ['Gaps Requiring Manual IUV:',data.vodGaps||'[Not documented]'],
+      ].map(([l,v],i)=>new TableRow({children:[dc(l,2200,i%2===0?LGRAY:'F8F6FC',true),dc(v,7965,i%2===0?'FFFFFF':LGRAY)]}))
+    ]});
+
+    // Step inventory — all steps
+    const AINV=[500,2200,1600,1200,4665];
+    const aqemInventory=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:AINV,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({tableHeader:true,children:[hc('#',AINV[0]),hc('Step Name',AINV[1]),hc('Step Type',AINV[2]),hc('Risk Class.',AINV[3]),hc('Classification Rationale / VoD Coverage',AINV[4])]}),
+      ...data.aqemSteps.map((s,i)=>{
+        const rr=s.riskClass==='Risk-Relevant';
+        const rowFill=i%2===0?'FFFFFF':LGRAY;
+        const rationale=rr?(s.ratResolved||''):'Administrative — no IUV required';
+        const vodNote=rr&&s.vodCoverage?' ['+s.vodCoverage+']':'';
+        return new TableRow({children:[
+          dc(String(s.num),AINV[0],LGRAY,true),
+          dc(s.name,AINV[1],rowFill),
+          dc(s.stepType||'',AINV[2],rowFill),
+          dc(s.riskClass,AINV[3],rr?BGRAY:LGRAY,true),
+          dc(rationale+vodNote,AINV[4],rowFill),
+        ]});
+      })
+    ]});
+
+    // AQEM detail blocks — Risk-Relevant steps only
+    const ASW=[1800,8365];
+    const rrAqemSteps=data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant');
+    const aqemDetailBlocks=rrAqemSteps.flatMap((s,i)=>[
+      new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:ASW,layout:TableLayoutType.FIXED,rows:[
+        new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('Step '+s.num+':   '+s.name+(s.stepType?' ('+s.stepType+')':''),{bold:true,size:18}),{after:0})]})]}),
+        ...([
+          ['Branch / Scope:',s.branch||'All paths'],
+          ['Assigned To:',s.assignedTo||''],
+          ['E-Signature:',s.eSig||'Yes'],
+          ['VoD Coverage:',s.vodCoverage==='custom'?(s.vodCustom||''):(s.vodCoverage||'Manual IUV')],
+          ['Required Fields / Completion Rules:',s.requiredFields||''],
+          ['Conditional Routing:',s.condRouting||'None configured'],
+          ['Conditional Display (Sections):',s.condDisplay||'None configured'],
+          ['Sites / Depts / User Groups:',s.scopingNote||''],
+          ['Data Mapping (linked events):',s.dataMapping||''],
+          ['GxP Rationale:',s.ratResolved||''],
+          ['IUV Reference:',s.iuvRef||''],
+        ]).map(([label,val],j)=>new TableRow({children:[
+          dc(label,ASW[0],j%2===0?LGRAY:'F8F6FC',true),
+          dc(val,ASW[1],j%2===0?'FFFFFF':LGRAY),
+        ]}))
+      ]})
+    ,blank()]);
+
+    const adminAqemSteps=data.aqemSteps.filter(s=>s.riskClass!=='Risk-Relevant');
+    configSection=[
+      secHdr('2.  AQEM WORKFLOW MAP'),
+      ...imgChildren,blank(),
+      secHdr('3.  VoD EVIDENCE SUMMARY'),
+      p(a('The following table documents the Validation on Demand (VoD) report used as primary IUV evidence for this workflow. Steps marked "VoD Only" or "VoD + Spot Check" in the inventory below are covered by this report.'),{after:80}),
+      vodBox,blank(),
+      secHdr('4.  STEP INVENTORY AND CLASSIFICATION'),
+      p(a('The table below lists every step in this AQEM workflow. Each step has been classified as Risk-Relevant or Administrative. VoD coverage designation is noted for Risk-Relevant steps.'),{after:80}),
+      p([a('Total steps: ',{bold:true,size:18}),a(String(data.aqemSteps.length)+'.   Risk-Relevant: ',{size:18}),a(String(rrAqemSteps.length)+'.   Administrative: ',{size:18}),a(String(adminAqemSteps.length)+'.',{size:18})],{after:80}),
+      aqemInventory,blank(),
+      ...(rrAqemSteps.length>0?[
+        secHdr('5.  RISK-RELEVANT STEP CONFIGURATION'),
+        p(a('The following detail blocks document the GxP-critical configuration for each Risk-Relevant step, including conditional logic, required fields, user group scoping, and data mapping for linked events.'),{after:80}),
+        ...aqemDetailBlocks,
+      ]:[]),
+      secHdr((rrAqemSteps.length>0?'6':'5')+'.  ADMINISTRATIVE SCOPE STATEMENT'),
+      p(a(data.adminScopeStatement||('The following steps are classified as Administrative and excluded from IUV scope: '+adminAqemSteps.map(s=>s.name||'Step '+s.num).join(', ')+'. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity.')),{after:0}),
+      blank(),
+    ];
+
   } else {
     // ── MODULE: five-column config table — template cols ──
     const CW=[1819,2856,1080,3510,900];
@@ -1012,11 +1618,11 @@ async function buildConfigSpec(data){
     ];
   }
 
-  const sectionCount=isWF?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5):3;
+  const sectionCount=isWF?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5):data.docType==='aqem'?(data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):3;
   const changeHist=makeChangeHist(h,changeNote,W_CS);
 
   const doc=new Document({sections:[{
-    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
+    properties:{page:{size:{width:12240,height:15840},margin:{top:2400,right:1008,bottom:1440,left:1008}},headers:{default:new docx.Header({children:[pageHeader]})},footers:{default:new docx.Footer({children:[pageFooter]})}},
     children:[
       secHdr('1.  INTENDED USE'),
       p(a(h.intendedUse||''),{after:80}),
@@ -1032,19 +1638,92 @@ async function buildConfigSpec(data){
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
   const a2=document.createElement('a');a2.href=url;
-  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site.replace(/,\s*/g,'-').replace(/\s+/g,'_'):''):h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
+  const fname=h.docNum+'_'+((isWF||data.docType==='aqem')?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site.replace(/,\s*/g,'-').replace(/\s+/g,'_'):''):h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
   a2.download=fname;a2.click();URL.revokeObjectURL(url);
 }
 
 // ── IUV Package builder — matched to corporate template ──────────────────────
 async function buildIUVPackage(data){
   const {Document,Packer,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
+    HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
   const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('SCS-',''));
   const csRef=h.docNum;
   const changeNote='Initial release – '+csRef;
+  const iuvPageHeader=makeDocHeader(h,'IUV Package',iuvDocNum);
+  const iuvPageFooter=makeFooter();
+
+
+  // AQEM IUV items — manual-only steps (not VoD Only)
+  if(data.docType==='aqem'){
+    const aqemManualItems=data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant'&&s.vodCoverage!=='VoD Only');
+    const aqemVodItems=data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant'&&s.vodCoverage==='VoD Only');
+
+    // VoD Evidence reference block
+    const VEW=[2200,8055];
+    const vodEvidenceTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:VEW,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({children:[new TableCell({width:{size:W_IUV,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('VoD Evidence — Primary IUV for VoD-Covered Steps',{bold:true,size:18}),{after:0})]})]}),
+      ...([
+        ['VoD Report Reference:',data.vodReportRef||'[Not provided]'],
+        ['Execution Date:',data.vodExecutionDate||'[Not provided]'],
+        ['MasterControl Version:',data.vodMcVersion||'[Not provided]'],
+        ['Steps Covered by VoD:',aqemVodItems.length>0?aqemVodItems.map(s=>s.name).join(', '):'None'],
+        ['VoD Scope:',data.vodScope||'[Not documented]'],
+        ['VoD Gaps / Manual IUV Required:',data.vodGaps||'[Not documented]'],
+      ]).map(([l,v],i)=>new TableRow({children:[dc(l,VEW[0],i%2===0?LGRAY:'F8F6FC',true),dc(v,VEW[1],i%2===0?'FFFFFF':LGRAY)]}))
+    ]});
+
+    // AQEM IUV step block — richer than standard
+    function aqemIuvStepBlock(s,idx){
+      const isSpotCheck=s.vodCoverage==='VoD + Spot Check';
+      const stepRef=csRef+' — Step '+s.num;
+      return new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
+        new TableRow({children:[new TableCell({width:{size:W_IUV,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('Step '+(idx+1)+':   '+s.name+(isSpotCheck?' [VoD + Spot Check]':''),{bold:true,size:18}),{after:0})]})]}),
+        new TableRow({children:[dc('Reference:',SW[0],LGRAY,true),dc(stepRef,SW[1])]}),
+        ...(isSpotCheck?[new TableRow({children:[dc('VoD Coverage:',SW[0],LGRAY,true),dc('Primary evidence: VoD Report '+data.vodReportRef+'. This step requires one manual spot-check confirmation only.',SW[1])]})]:[]),
+        new TableRow({children:[dc('Test Action:',SW[0],LGRAY,true),dc('[Describe the specific action to verify this step configuration]',SW[1])]}),
+        ...(s.condRouting?[new TableRow({children:[dc('Conditional Routing to Test:',SW[0],LGRAY,true),dc(s.condRouting,SW[1])]})]:[]),
+        ...(s.condDisplay?[new TableRow({children:[dc('Conditional Display to Test:',SW[0],LGRAY,true),dc(s.condDisplay,SW[1])]})]:[]),
+        ...(s.requiredFields?[new TableRow({children:[dc('Required Fields to Verify:',SW[0],LGRAY,true),dc(s.requiredFields,SW[1])]})]:[]),
+        ...(s.dataMapping?[new TableRow({children:[dc('Data Mapping to Verify:',SW[0],LGRAY,true),dc(s.dataMapping,SW[1])]})]:[]),
+        new TableRow({children:[dc('Expected Result / Acceptance Criterion:',SW[0],LGRAY,true),dc('[Describe what must be observed for this step to pass]',SW[1])]}),
+        new TableRow({children:[dc('Evidence:',SW[0],LGRAY,true),dc('☐ Screenshot(s)   ☐ Screen recording   ☐ Witnessed walkthrough    ☐ System Record   ☐ VoD Report reference',SW[1])]}),
+        new TableRow({children:[dc('Result:',SW[0],MGRAY,true),new TableCell({width:{size:SW[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[p(a('☐ Pass          ☐ Fail          ☐ N/A',{size:18}),{after:0})]}),]}),
+        new TableRow({children:[dc('Notes:',SW[0],AMBER,true),dc('[Record any unexpected behavior, discrepancy reference number, or N/A if none]',SW[1])]}),
+      ]});
+    }
+
+    const aqemDoc=new Document({sections:[{
+      properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
+      children:[
+        secHdr('1.   PURPOSE AND SCOPE'),
+        p(a('This IUV Evidence Package documents the Intended Use Verification performed to confirm that the MasterControl AQEM '+h.workflowName+' workflow configuration, as documented in Configuration Specification '+csRef+', supports its intended GxP use. IUV is performed against each risk-relevant configuration. VoD-covered steps are evidenced by the VoD report referenced in Section 2. Manual IUV steps follow in Section 4.'),{after:0}),
+        blank(),
+        secHdr('2.   VoD EVIDENCE REFERENCE'),
+        p(a('The Validation on Demand (VoD) report referenced below serves as primary IUV evidence for steps designated "VoD Only" or "VoD + Spot Check" in the step inventory. No additional scripted testing is required for VoD-Only steps.'),{after:80}),
+        vodEvidenceTable,blank(),
+        secHdr('3.   PRE-EXECUTION CHECKLIST'),
+        preCheckTable,blank(),
+        secHdr('4.   MANUAL IUV TEST STEPS'),
+        p(a('The following test steps apply to steps not fully covered by VoD. Complete all Pass/Fail fields at time of execution. Do not pre-populate results.'),{after:80}),
+        ...aqemManualItems.flatMap((s,i)=>[aqemIuvStepBlock(s,i),blank()]),
+        ...(aqemManualItems.length===0?[p(a('All Risk-Relevant steps are covered by VoD Only. No manual IUV steps are required beyond the VoD report referenced in Section 2.'),{after:0}),blank()]:[]),
+        secHdr('5.   IUV SUMMARY AND RELEASE DECISION'),
+        summaryTable,blank(),
+        secHdr('6.   CHANGE HISTORY'),
+        changeHist,blank(),
+        p(a('END OF DOCUMENT',{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
+      ]
+    }]});
+
+    const aqemBlob=await Packer.toBlob(aqemDoc);
+    const aqemUrl=URL.createObjectURL(aqemBlob);
+    const aqemA=document.createElement('a');aqemA.href=aqemUrl;
+    aqemA.download=iuvDocNum+'_'+h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site.replace(/,\s*/g,'-').replace(/\s+/g,'_'):'')+'_IUV_Package.docx';
+    aqemA.click();URL.revokeObjectURL(aqemUrl);
+    return;
+  }
 
   // Pre-execution checklist — template cols: 600, 7360, 2295
   const PCW=[600,7360,2295];
@@ -1130,7 +1809,7 @@ async function buildIUVPackage(data){
   // IUV template structure:
   // 1. PURPOSE AND SCOPE → 2. PRE-EXECUTION CHECKLIST → 3. IUV TEST STEPS → 4. IUV SUMMARY → 5. CHANGE HISTORY
   const doc=new Document({sections:[{
-    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
+    properties:{page:{size:{width:12240,height:15840},margin:{top:2400,right:1008,bottom:1440,left:1008}},headers:{default:new docx.Header({children:[pageHeader]})},footers:{default:new docx.Footer({children:[pageFooter]})}},
     children:[
       secHdr("1.   PURPOSE AND SCOPE"),
       p(a("This IUV Evidence Package documents the Intended Use Verification performed to confirm that the MasterControl "+h.module+(isWF?" — "+h.workflowName:"")+" configuration, as documented in Configuration Specification "+csRef+", supports its intended GxP use. IUV is performed against each risk-relevant configuration identified in the Configuration Specification. Administrative configurations are excluded from IUV scope."),{after:0}),
@@ -1165,6 +1844,7 @@ const PREFIX_MAP = {
   'workflow:Training':         'SCS-TRN-WF',
   'workflow:Process':          'SCS-PROC-WF',
   'workflow:AQEM':             'SCS-AQEM-WF',
+  'aqem:AQEM':                 'SCS-AQEM-WF',
   'workflow:Supplier':         'SCS-SUP-WF',
   'workflow:Audit':            'SCS-AUD-WF',
   'workflow:Risk':             'SCS-RISK-WF',
@@ -1208,6 +1888,7 @@ function incrementCounter(prefix) {
 }
 
 function derivePrefix() {
+  if (docType === 'aqem') return 'SCS-AQEM-WF';
   const type = docType || 'module';
   const mod = document.getElementById('module').value || 'Documents';
   return PREFIX_MAP[type + ':' + mod] || ('SCS-' + mod.toUpperCase().replace(/[^A-Z]/g,'-').replace(/-+/g,'-').slice(0,6));
@@ -1231,6 +1912,8 @@ function suggestDocNum() {
     updateDocId();
   }
   setDocNumStatus('auto', 'Auto-suggested — will lock when you proceed');
+  // Auto-suggest IUV package number based on doc number
+  suggestIuvNum();
 }
 
 function onDocNumInput() {
@@ -1245,6 +1928,8 @@ function onDocNumInput() {
     delete input.dataset.manualEdit;
     setDocNumStatus('auto', 'Auto-suggested — will lock when you proceed');
   }
+  // Re-derive IUV number whenever doc number changes
+  suggestIuvNum();
 }
 
 function setDocNumStatus(type, text) {
@@ -1268,6 +1953,12 @@ function lockAndProceed() {
     input.style.background = 'var(--green-light)';
     input.style.borderColor = 'var(--green)';
     setDocNumStatus('locked', 'Locked — counter incremented for next user');
+    // Also increment IUV counter unless user manually edited the IUV field
+    const iuvInput = document.getElementById('iuvPackage');
+    if (iuvInput && !iuvInput.dataset.manualEdit && iuvInput.value) {
+      const iuvPrefix = getIuvPrefix(input.value);
+      incrementIuvCounter(iuvPrefix);
+    }
     refreshCounterGrid();
   }
   goTo(2);
