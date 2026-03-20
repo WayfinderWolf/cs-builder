@@ -648,7 +648,7 @@ function renderStep(s) {
         <div class="field"><label class="lbl">Step Type</label>
           <select onchange="updW(${s.id},'stepType',this.value)">
             <option value="">— Select —</option>
-            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
+            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation', 'Parallel'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
           </select></div>
         <div class="field"><label class="lbl">Risk Classification</label>
           <select onchange="updW(${s.id},'riskClass',this.value);rerenderStepRcBadge(${s.id});toggleRRDetails(${s.id})">
