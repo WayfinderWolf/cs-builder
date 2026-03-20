@@ -713,142 +713,105 @@ async function exportBoth(){
 
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
-// ── Shared docx helpers ─────────────────────────────────────────────────────
+// ── Shared docx helpers — matched to corporate templates ────────────────────
 function getDocxHelpers(){
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,
     AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType}=window.docx;
-  const PURPLE="7030A0",LGRAY="F2F2F2",MGRAY="D9D9D9",BGRAY="D6E4F0",GREEN_BG="E8F4E8",AMBER_BG="FFF2CC";
+  // Colors extracted from template XML
+  const PURPLE="7030A0";
+  const HDR_FILL="E5DFEC";  // template header row fill (light purple)
+  const LGRAY="F2F2F2";     // odd data rows / label cells
+  const MGRAY="D9D9D9";     // Result row in IUV step
+  const BGRAY="D6E4F0";     // Risk-Relevant and IUV=Yes cells
+  const AMBER="FFF2CC";     // Notes row in IUV step
+  // Table widths from template XML
+  const W_CS=10165;   // Config Spec total width
+  const W_IUV=10255;  // IUV package total width
   const thin={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"};
   const allThin={top:thin,bottom:thin,left:thin,right:thin};
   const cm=()=>({top:80,bottom:80,left:120,right:120});
-  const W=9360;
-  const a=(text,opts={})=>new TextRun({text:String(text||''),font:"Arial",size:opts.size||20,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
+  // Calibri to match corporate template
+  const a=(text,opts={})=>new TextRun({text:String(text||''),font:"Calibri",size:opts.size||20,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
   const p=(children,opts={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:opts.align||AlignmentType.LEFT,spacing:{before:opts.before||0,after:opts.after!==undefined?opts.after:80,line:240},indent:opts.indent?{left:opts.indent}:undefined});
   const blank=()=>p(a(" "),{after:0});
+  // Section header: bold Calibri, purple bottom border — matches template
   const secHdr=text=>new Paragraph({children:[a(text,{bold:true,size:20})],spacing:{before:160,after:80,line:240},border:{bottom:{style:BorderStyle.SINGLE,size:6,color:PURPLE,space:4}}});
-  const hc=(text,w,fill)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||PURPLE,type:ShadingType.CLEAR},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,children:[p(a(text,{bold:true,size:18,color:"FFFFFF"}),{after:0})]});
+  // Header cell: E5DFEC fill, bold 9pt Calibri (no white text — matches template)
+  const hc=(text,w)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,children:[p(a(text,{bold:true,size:18}),{after:0})]});
+  // Data cell
   const dc=(text,w,fill,bold)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.TOP,children:[p(a(text||"",{size:18,bold:bold||false}),{after:0})]});
-
-  const makeDocHdr=(h,docLabel,titleText,docNum,rev)=>new Table({
-    width:{size:W,type:WidthType.DXA},columnWidths:[2000,5200,2160],layout:TableLayoutType.FIXED,
-    borders:{top:{style:BorderStyle.DOUBLE,size:6,color:"000000"},bottom:{style:BorderStyle.DOUBLE,size:6,color:"000000"},left:{style:BorderStyle.DOUBLE,size:6,color:"000000"},right:{style:BorderStyle.DOUBLE,size:6,color:"000000"},insideH:thin,insideV:thin},
-    rows:[
-      new TableRow({children:[
-        new TableCell({width:{size:2000,type:WidthType.DXA},rowSpan:2,shading:{fill:LGRAY,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p(a(docLabel,{bold:true,size:16}),{align:AlignmentType.CENTER,after:0})]}),
-        new TableCell({width:{size:5200,type:WidthType.DXA},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p(a(titleText,{bold:true,size:20,color:PURPLE}),{align:AlignmentType.CENTER,after:0})]}),
-        new TableCell({width:{size:2160,type:WidthType.DXA},shading:{fill:LGRAY,type:ShadingType.CLEAR},verticalAlign:VerticalAlign.CENTER,margins:cm(),children:[p([a("Doc #: ",{bold:true,size:18}),a(docNum,{size:18})],{after:20}),p([a("Revision: ",{bold:true,size:18}),a(rev,{size:18})],{after:0})]}),
-      ]}),
-      new TableRow({children:[
-        new TableCell({width:{size:5200,type:WidthType.DXA},margins:cm(),children:[p([a("System: ",{bold:true,size:18}),a(h.system+"   ",{size:18}),a("Module: ",{bold:true,size:18}),a(h.module+(h.workflowName?"   ":""),{size:18}),h.workflowName?a("Workflow: ",{bold:true,size:18}):a("",{size:18}),h.workflowName?a(h.workflowName+"   ",{size:18}):a("",{size:18}),a("IUV #: ",{bold:true,size:18}),a(h.iuvPackage,{size:18})],{after:0})]}),
-        new TableCell({width:{size:2160,type:WidthType.DXA},shading:{fill:LGRAY,type:ShadingType.CLEAR},margins:cm(),children:[p([a("Site: ",{bold:true,size:18}),a(h.site||"All Sites",{size:18})],{after:0})]}),
-      ]}),
-    ]
-  });
-
-  const makeMetaTable=(h)=>{
-    const MW=[2000,2680,2000,2680];
-    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:MW,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({children:[dc("Effective Date:",MW[0],LGRAY,true),dc(h.effectiveDate||"[MM/DD/YYYY]",MW[1]),dc("Supersedes:",MW[2],LGRAY,true),dc(h.supersedes,MW[3])]}),
-      new TableRow({children:[dc("Related Val. Plan:",MW[0],LGRAY,true),dc(h.valPlan,MW[1]),dc("Related IUV Package:",MW[2],LGRAY,true),dc(h.iuvPackage,MW[3])]}),
-      new TableRow({children:[dc("GxP Classification:",MW[0],LGRAY,true),dc(h.gxpClass,MW[1]),dc("21 CFR Part 11 / Annex 11:",MW[2],LGRAY,true),dc(h.partEleven,MW[3])]}),
-    ]});
-  };
-
-  const makeChangeHist=(h,note)=>{
-    const CHW=[1400,900,2100,4960];
-    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:CHW,layout:TableLayoutType.FIXED,rows:[
+  // Change history table — template cols: 1400, 900, 2100, 5765 (CS) / 5855 (IUV)
+  const makeChangeHist=(h,note,totalW)=>{
+    const remain=(totalW||W_CS)-1400-900-2100;
+    const CHW=[1400,900,2100,remain];
+    return new Table({width:{size:totalW||W_CS,type:WidthType.DXA},columnWidths:CHW,layout:TableLayoutType.FIXED,rows:[
       new TableRow({tableHeader:true,children:[hc("Date",CHW[0]),hc("Revision",CHW[1]),hc("Author",CHW[2]),hc("Changes",CHW[3])]}),
-      new TableRow({children:[dc(h.effectiveDate||"MM/DD/26",CHW[0]),dc(h.revision,CHW[1]),dc(h.author||"[Author]",CHW[2]),dc(note,CHW[3])]}),
+      new TableRow({children:[dc(h.effectiveDate||"MM/DD/YY",CHW[0]),dc(h.revision||"1.0",CHW[1]),dc(h.author||"",CHW[2]),dc(note,CHW[3])]}),
     ]});
   };
-
   return{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    PURPLE,LGRAY,MGRAY,BGRAY,GREEN_BG,AMBER_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeMetaTable,makeChangeHist};
+    PURPLE,HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_CS,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist};
 }
 
-// ── Config Spec builder ──────────────────────────────────────────────────────
+// ── Config Spec builder — matched to corporate templates ─────────────────────
 async function buildConfigSpec(data){
-  const {Document,Packer,Table,TableRow,AlignmentType,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    PURPLE,LGRAY,BGRAY,GREEN_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeMetaTable,makeChangeHist}=getDocxHelpers();
+  const {Document,Packer,Table,TableRow,TableCell,AlignmentType,WidthType,ShadingType,VerticalAlign,TableLayoutType,
+    HDR_FILL,LGRAY,BGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
-  const titleText=isWF?(h.workflowName+' — '+(h.site||'All Sites')+' Site'):h.module+' Module Configuration Specification';
-  const docHdr=makeDocHdr(h,isWF?"WORKFLOW CONFIGURATION SPECIFICATION":"MODULE CONFIGURATION SPECIFICATION",titleText,h.docNum,h.revision);
-  const metaTable=makeMetaTable(h);
+  const changeNote='Initial Release ('+h.docNum+')';
 
-  let configSection=[];
-
-  if(isWF){
-    // Two step map tables for readability
-    const SMA=[440,1700,900,1700,1700,1420,500];
-    const stepTableA=new Table({width:{size:W,type:WidthType.DXA},columnWidths:SMA,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({tableHeader:true,children:[hc("#",SMA[0]),hc("Step Name",SMA[1]),hc("Branch",SMA[2]),hc("Assigned To",SMA[3]),hc("Reassign Auth",SMA[4]),hc("Step Type",SMA[5]),hc("E-Sig",SMA[6])]}),
-      ...data.steps.map(s=>{
-        const fill=s.branch==='tier1'?GREEN_BG:s.branch==='tier2'?BGRAY:"FFFFFF";
-        const bl=s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':'All paths';
-        return new TableRow({children:[dc(String(s.num),SMA[0],LGRAY,true),dc(s.name,SMA[1],fill),dc(bl,SMA[2],fill),dc(s.assignedTo,SMA[3],fill),dc(s.reassignAuth,SMA[4],fill),dc(s.stepType,SMA[5],fill),dc(s.eSig,SMA[6],fill)]});
+  // Config table — template cols: 1819, 2856, 1080, 3510, 900 (total 10165)
+  // Same structure for both module and workflow Config Specs per template
+  const CW=[1819,2856,1080,3510,900];
+  const configRows = isWF
+    ? data.steps.map((s,i)=>{
+        const rr=true; // workflow steps are always risk-relevant
+        return new TableRow({children:[
+          dc(s.name,CW[0],i%2===0?"FFFFFF":LGRAY),
+          dc(s.assignedTo+(s.branch&&s.branch!=='both'?' ('+(s.branch==='tier1'?'Tier 1':'Tier 2')+')':''),CW[1],i%2===0?"FFFFFF":LGRAY),
+          dc("Risk-Relevant",CW[2],BGRAY,true),
+          dc(s.ratResolved||"",CW[3],i%2===0?"FFFFFF":LGRAY),
+          dc("Yes",CW[4],BGRAY,true),
+        ]});
       })
-    ]});
-    const SMB=[440,1700,6220,1000];
-    const stepTableB=new Table({width:{size:W,type:WidthType.DXA},columnWidths:SMB,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({tableHeader:true,children:[hc("#",SMB[0]),hc("Step Name",SMB[1]),hc("GxP Rationale",SMB[2]),hc("IUV Ref",SMB[3])]}),
-      ...data.steps.map(s=>new TableRow({children:[dc(String(s.num),SMB[0],LGRAY,true),dc(s.name,SMB[1],LGRAY),dc(s.ratResolved||"",SMB[2]),dc(s.iuvRef,SMB[3],LGRAY)]}))
-    ]});
-    const APW=[440,1900,1900,5220];
-    const adminTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:APW,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({tableHeader:true,children:[hc("#",APW[0]),hc("Step Name",APW[1]),hc("Step Type",APW[2]),hc("Notification / Notes",APW[3])]}),
-      ...data.steps.map((s,i)=>new TableRow({children:[dc(String(s.num),APW[0],LGRAY,true),dc(s.name,APW[1],i%2===0?"FFFFFF":LGRAY),dc(s.stepType,APW[2],i%2===0?"FFFFFF":LGRAY),dc(s.adminNote||"",APW[3],i%2===0?"FFFFFF":LGRAY)]}))
-    ]});
-    configSection=[
-      secHdr("2.  WORKFLOW STEP MAP — CONFIGURATION"),
-      p(a("The table below documents the step-level configuration of this workflow."),{after:80}),
-      stepTableA,blank(),
-      secHdr("3.  WORKFLOW STEP MAP — GxP RATIONALE"),
-      p(a("The table below documents the GxP rationale for each step and the corresponding IUV test step reference."),{after:80}),
-      stepTableB,blank(),
-      secHdr("4.  ADMINISTRATIVE PROPERTIES"),
-      p(a("Administrative configuration of each step for reference and change tracking."),{after:80}),
-      adminTable,blank(),
-    ];
-  } else {
-    // Module config table
-    const CW=[1800,2200,1200,3160,900];
-    const configTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:CW,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({tableHeader:true,children:[hc("Setting Name",CW[0]),hc("Configured Value",CW[1]),hc("Risk Classification",CW[2]),hc("Business Rationale",CW[3]),hc("IUV Required",CW[4])]}),
-      ...data.settings.map((s,i)=>{
+    : data.settings.map((s,i)=>{
         const rr=s.riskClass==='Risk-Relevant';
-        const rcFill=rr?BGRAY:LGRAY;
-        const iuvFill=s.iuvReq==='Yes'?BGRAY:LGRAY;
         return new TableRow({children:[
           dc(s.name,CW[0],i%2===0?"FFFFFF":LGRAY),
           dc(s.value,CW[1],i%2===0?"FFFFFF":LGRAY),
-          dc(s.riskClass,CW[2],rcFill,true),
+          dc(s.riskClass,CW[2],rr?BGRAY:LGRAY,true),
           dc(s.ratResolved||"",CW[3],i%2===0?"FFFFFF":LGRAY),
-          dc(s.iuvReq,CW[4],iuvFill,true),
+          dc(s.iuvReq,CW[4],rr&&s.iuvReq==='Yes'?BGRAY:LGRAY,true),
         ]});
-      })
-    ]});
-    configSection=[
-      secHdr("2.  CONFIGURATION SETTINGS"),
-      p(a("The table below documents each configuration setting, its configured value, risk classification, business rationale, and IUV requirement."),{after:80}),
-      configTable,blank(),
-    ];
-  }
+      });
 
-  const changeHist=makeChangeHist(h,"Initial release — CC2026-013 Computer Software Assurance transition project for MasterControl.");
-  const sectionNum=isWF?5:3;
+  const configTable=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:CW,layout:TableLayoutType.FIXED,rows:[
+    new TableRow({tableHeader:true,children:[
+      hc("Setting Name",CW[0]),hc("Configured Value",CW[1]),hc("Risk Class.",CW[2]),
+      hc("Business Rationale",CW[3]),hc("IUV",CW[4])
+    ]}),
+    ...configRows
+  ]});
 
+  const changeHist=makeChangeHist(h,changeNote,W_CS);
+
+  // Document structure matches template exactly:
+  // 1. INTENDED USE → Note: → (blank) → 2. CONFIGURATION SETTINGS → table → 3. CHANGE HISTORY → table → END
   const doc=new Document({sections:[{
     properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
     children:[
-      docHdr,blank(),metaTable,blank(),
       secHdr("1.  INTENDED USE"),
-      p(a(h.intendedUse),{after:80}),
-      p([a("Note: ",{bold:true,size:18}),a(h.esigNote,{size:18,italic:true})],{after:0}),
+      p(a(h.intendedUse||""),{after:80}),
+      p([a("Note: ",{bold:true,size:18}),a(h.esigNote||"",{size:18})],{after:0}),
       blank(),
-      ...configSection,
-      secHdr(sectionNum+".  CHANGE HISTORY"),
-      changeHist,blank(),
+      secHdr("2.  CONFIGURATION SETTINGS"),
+      p(a("The table below documents each configuration setting, its configured value, risk classification, business rationale, and IUV requirement."),{after:80}),
+      configTable,
+      blank(),
+      secHdr("3.  CHANGE HISTORY"),
+      changeHist,
+      blank(),
       p(a("END OF DOCUMENT",{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
     ]
   }]});
@@ -856,141 +819,129 @@ async function buildConfigSpec(data){
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
   const a2=document.createElement('a');a2.href=url;
-  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+'_'+h.site:h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
+  const fname=h.docNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site:''):h.module.replace(/\s+/g,'_'))+'_Config_Spec.docx';
   a2.download=fname;a2.click();URL.revokeObjectURL(url);
 }
 
-// ── IUV Package builder ──────────────────────────────────────────────────────
+// ── IUV Package builder — matched to corporate template ──────────────────────
 async function buildIUVPackage(data){
   const {Document,Packer,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    PURPLE,LGRAY,MGRAY,AMBER_BG,thin,allThin,cm,W,a,p,blank,secHdr,hc,dc,makeDocHdr,makeChangeHist}=getDocxHelpers();
+    HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
   const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('CS-',''));
-  const titleText=isWF?(h.workflowName+' — '+(h.site||'All Sites')+' — IUV Evidence Package'):h.module+' Module — IUV Evidence Package';
-  const docHdr=makeDocHdr(h,"IUV EVIDENCE PACKAGE",titleText,iuvDocNum,h.revision);
+  const csRef=h.docNum;
+  const changeNote='Initial release – '+csRef;
 
-  // Execution sign-off
-  const AW=[2340,2340,2340,2340];
-  const signOffTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:AW,layout:TableLayoutType.FIXED,rows:[
-    new TableRow({tableHeader:true,children:[hc("Role",AW[0]),hc("Name",AW[1]),hc("Signature",AW[2]),hc("Date",AW[3])]}),
-    ...["IUV Executor (Process Owner)","IUV Witness (if applicable)","QA Reviewer"].map(role=>
-      new TableRow({children:[dc(role,AW[0],LGRAY,true),dc("",AW[1]),dc("",AW[2]),dc("",AW[3])]}))
-  ]});
-
-  // Pre-execution checklist
-  const PCW=[600,7360,1400];
+  // Pre-execution checklist — template cols: 600, 7360, 2295
+  const PCW=[600,7360,2295];
   const preCheckItems=[
-    "Configuration Specification ("+h.docNum+") is approved and effective prior to IUV execution.",
-    "IUV is being executed in the correct environment (specify: Production / Staging: ____________).",
+    "Configuration Specification ("+csRef+") is approved and effective prior to IUV execution.",
+    "IUV is being executed in the ___________ environment (specify: Production/Dev/Test).",
     "MasterControl system version confirmed: ____________.",
     "Test accounts with required roles are available and confirmed.",
     "Executor has reviewed the Configuration Specification and understands all test steps prior to execution.",
-    "QA has been notified that IUV execution is commencing.",
   ];
-  const preCheckTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:PCW,layout:TableLayoutType.FIXED,rows:[
+  const preCheckTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:PCW,layout:TableLayoutType.FIXED,rows:[
     new TableRow({tableHeader:true,children:[hc("#",PCW[0]),hc("Pre-Execution Condition",PCW[1]),hc("Confirmed",PCW[2])]}),
     ...preCheckItems.map((item,i)=>new TableRow({children:[
       dc(String(i+1)+".",PCW[0],LGRAY,true),
       dc(item,PCW[1],i%2===0?"FFFFFF":LGRAY),
-      new TableCell({width:{size:PCW[2],type:WidthType.DXA},borders:allThin,margins:cm(),children:[p(a("☐ Yes  ☐ No",{size:18}),{align:AlignmentType.CENTER,after:0})]}),
+      new TableCell({width:{size:PCW[2],type:WidthType.DXA},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,
+        children:[p(a("☐ Yes   ☐ No",{size:18}),{align:AlignmentType.CENTER,after:0})]}),
     ]}))
   ]});
 
-  // IUV steps — auto-generate from risk-relevant items
+  // IUV test steps — auto-generated from risk-relevant items
+  // Template: cols 1400, 8855. Step header spans full width with E5DFEC fill (not purple).
+  // Row fills: F2F2F2 label / FFFFFF content / D9D9D9 Result / FFF2CC Notes
   const iuvItems = isWF
-    ? data.steps.map(s=>({ref:String(s.num),name:s.name,csRef:h.docNum,rationale:s.ratResolved||""}))
-    : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef:h.docNum,rationale:s.ratResolved||""}));
+    ? data.steps.map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||""}))
+    : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||""}));
 
+  const SW=[1400,8855];
   function iuvStepBlock(item,idx){
-    const SW=[1400,7960];
-    return new Table({width:{size:W,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
+    return new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
+      // Step header row — full width span, E5DFEC fill (matches template)
       new TableRow({children:[
-        new TableCell({width:{size:W,type:WidthType.DXA},columnSpan:2,shading:{fill:PURPLE,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
-          children:[p(a("Step "+(idx+1)+":  "+item.name+" ("+item.csRef+" — "+item.ref+")",{bold:true,size:20,color:"FFFFFF"}),{after:0})]})
+        new TableCell({width:{size:W_IUV,type:WidthType.DXA},columnSpan:2,
+          shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
+          children:[p(a("Step "+(idx+1)+":   "+item.name,{bold:true,size:18}),{after:0})]})
       ]}),
-      ...[
-        ["Configuration Reference:",item.csRef+" — "+item.ref],
-        ["GxP Rationale:",item.rationale||"[Describe why this configuration is GxP-critical]"],
-        ["Test Action:","[Describe the specific action to take to verify this configuration is in place and functioning as intended]"],
-        ["Expected Result / Acceptance Criterion:","[Describe what must be observed for this step to pass]"],
-        ["Evidence Format:","☐ Screenshot(s)   ☐ Screen recording   ☐ Witnessed walkthrough — Witness signature in sign-off above"],
-      ].map(([label,content])=>new TableRow({children:[
-        dc(label,SW[0],LGRAY,true),
-        dc(content,SW[1]),
-      ]})),
+      // Reference row
+      new TableRow({children:[dc("Reference:",SW[0],LGRAY,true),dc(csRef+" — "+item.ref,SW[1])]}),
+      // Test Action
+      new TableRow({children:[dc("Test Action:",SW[0],LGRAY,true),dc("[Describe the specific action to take to verify this configuration is in place and functioning as intended]",SW[1])]}),
+      // Expected Result
+      new TableRow({children:[dc("Expected Result / Acceptance Criterion:",SW[0],LGRAY,true),dc("[Describe what must be observed for this step to pass]",SW[1])]}),
+      // Evidence
+      new TableRow({children:[dc("Evidence:",SW[0],LGRAY,true),dc("☐ Screenshot(s)   ☐ Screen recording   ☐ Witnessed walkthrough    ☐ System Record",SW[1])]}),
+      // Result — D9D9D9 label, no fill on value cell (matches template)
       new TableRow({children:[
         dc("Result:",SW[0],MGRAY,true),
-        new TableCell({width:{size:SW[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[p(a("☐ Pass          ☐ Fail          ☐ N/A",{bold:true,size:20}),{after:0})]}),
+        new TableCell({width:{size:SW[1],type:WidthType.DXA},borders:allThin,margins:cm(),
+          children:[p(a("☐ Pass          ☐ Fail          ☐ N/A",{size:18}),{after:0})]}),
       ]}),
+      // Notes — FFF2CC amber label (matches template)
       new TableRow({children:[
-        dc("Discrepancy / Notes:",SW[0],AMBER_BG,true),
+        dc("Notes:",SW[0],AMBER,true),
         dc("[Record any unexpected behavior, discrepancy reference number, or N/A if none]",SW[1]),
       ]}),
     ]});
   }
 
-  // IUV summary
-  const IUVSUM=[2400,6960];
-  const summaryTable=new Table({width:{size:W,type:WidthType.DXA},columnWidths:IUVSUM,layout:TableLayoutType.FIXED,rows:[
-    ...[
+  // IUV Summary table — template cols: 2400, 7855
+  const SSUM=[2400,7855];
+  const summaryTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SSUM,layout:TableLayoutType.FIXED,rows:[
+    ...([
       ["Total IUV Steps",String(iuvItems.length)],
       ["Steps Passed","[  ]"],
       ["Steps Failed","[  ]"],
       ["Steps N/A","[  ]"],
       ["Discrepancies Opened","[  ]  — Deviation reference(s): _______________"],
-      ["IUV Execution Date(s)","[MM/DD/YYYY – MM/DD/YYYY]"],
-      ["MasterControl Version Tested","[Version]"],
-      ["Environment","☐ Production    ☐ Staging"],
-    ].map(([l,v])=>new TableRow({children:[dc(l,IUVSUM[0],LGRAY,true),dc(v,IUVSUM[1])]})),
+      ["IUV Execution Date(s)","[MM/DD/YY – MM/DD/YY]"],
+    ]).map(([l,v])=>new TableRow({children:[dc(l,SSUM[0],LGRAY,true),dc(v,SSUM[1])]})),
+    // Release Decision — E5DFEC label cell (matches template)
     new TableRow({children:[
-      dc("Release Decision",IUVSUM[0],PURPLE,true),
-      new TableCell({width:{size:IUVSUM[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[
-        p(a("☐ APPROVED — All IUV steps passed. System validated for intended use as defined in "+h.docNum+".",{size:18}),{after:40}),
-        p(a("☐ CONDITIONALLY APPROVED — Open discrepancies documented and risk-accepted. See deviation reference(s) above.",{size:18}),{after:40}),
-        p(a("☐ NOT APPROVED — IUV failures require remediation before release. See deviation reference(s) above.",{size:18}),{after:0}),
+      dc("Release Decision",SSUM[0],HDR_FILL,true),
+      new TableCell({width:{size:SSUM[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[
+        p(a("[ ] APPROVED — All IUV steps passed. System validated for intended use as defined in "+csRef+".",{size:18}),{after:60}),
+        p(a("[ ] CONDITIONALLY APPROVED — Open discrepancies documented and risk-accepted. See deviation reference(s) above.",{size:18}),{after:60}),
+        p(a("[ ] NOT APPROVED — IUV failures require remediation before release. See deviation reference(s) above.",{size:18}),{after:0}),
       ]}),
     ]}),
   ]});
 
-  // QA release sign-off
-  const QAW=[3120,3120,3120];
-  const qaSignOff=new Table({width:{size:W,type:WidthType.DXA},columnWidths:QAW,layout:TableLayoutType.FIXED,rows:[
-    new TableRow({tableHeader:true,children:[hc("QA Approver Name",QAW[0]),hc("Signature",QAW[1]),hc("Date",QAW[2])]}),
-    new TableRow({children:[dc("",QAW[0]),dc("",QAW[1]),dc("",QAW[2])]}),
-  ]});
+  const changeHist=makeChangeHist(h,changeNote,W_IUV);
 
-  const changeHist=makeChangeHist(h,"Initial release — CC2026-013 Computer Software Assurance transition project for MasterControl.");
-
-  const children=[
-    docHdr,blank(),
-    secHdr("1.  PURPOSE AND SCOPE"),
-    p(a("This IUV Evidence Package documents the Intended Use Verification performed to confirm that the "+h.system+" "+h.module+(isWF?" — "+h.workflowName:"")+" configuration, as documented in Configuration Specification "+h.docNum+", supports its intended GxP use. IUV is performed against each risk-relevant configuration identified in the Configuration Specification. Administrative configurations are excluded from IUV scope."),{after:0}),blank(),
-    secHdr("2.  EXECUTION SIGN-OFF"),
-    signOffTable,blank(),
-    secHdr("3.  PRE-EXECUTION CHECKLIST"),
-    preCheckTable,blank(),
-    secHdr("4.  IUV TEST STEPS"),
-    p(a("Complete all Pass/Fail fields at time of execution. Do not pre-populate results. Attach evidence directly to this document or the associated MasterControl validation record package."),{after:80}),
-    ...iuvItems.flatMap((item,i)=>[iuvStepBlock(item,i),blank()]),
-    secHdr("5.  IUV SUMMARY AND RELEASE DECISION"),
-    summaryTable,blank(),
-    p(a("QA Approval of Release Decision:",{bold:true,size:20}),{before:120,after:60}),
-    qaSignOff,blank(),
-    secHdr("6.  CHANGE HISTORY"),
-    changeHist,blank(),
-    p(a("END OF DOCUMENT",{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
-  ];
-
+  // IUV template structure:
+  // 1. PURPOSE AND SCOPE → 2. PRE-EXECUTION CHECKLIST → 3. IUV TEST STEPS → 4. IUV SUMMARY → 5. CHANGE HISTORY
   const doc=new Document({sections:[{
     properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
-    children
+    children:[
+      secHdr("1.   PURPOSE AND SCOPE"),
+      p(a("This IUV Evidence Package documents the Intended Use Verification performed to confirm that the MasterControl "+h.module+(isWF?" — "+h.workflowName:"")+" configuration, as documented in Configuration Specification "+csRef+", supports its intended GxP use. IUV is performed against each risk-relevant configuration identified in the Configuration Specification. Administrative configurations are excluded from IUV scope."),{after:0}),
+      blank(),
+      secHdr("2.   PRE-EXECUTION CHECKLIST"),
+      preCheckTable,
+      blank(),
+      secHdr("3.   IUV TEST STEPS"),
+      p(a("Complete all Pass/Fail fields at time of execution. Do not pre-populate results. Attach evidence directly to this document or the associated MasterControl validation record package."),{after:80}),
+      ...iuvItems.flatMap((item,i)=>[iuvStepBlock(item,i),blank()]),
+      secHdr("4.   IUV SUMMARY AND RELEASE DECISION"),
+      summaryTable,
+      blank(),
+      secHdr("5.   CHANGE HISTORY"),
+      changeHist,
+      blank(),
+      p(a("END OF DOCUMENT",{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
+    ]
   }]});
 
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
   const a2=document.createElement('a');a2.href=url;
-  const fname=iuvDocNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+'_'+h.site:h.module.replace(/\s+/g,'_'))+'_IUV_Package.docx';
+  const fname=iuvDocNum+'_'+(isWF?h.workflowName.replace(/\s+/g,'_')+(h.site?'_'+h.site:''):h.module.replace(/\s+/g,'_'))+'_IUV_Package.docx';
   a2.download=fname;a2.click();URL.revokeObjectURL(url);
 }
 
