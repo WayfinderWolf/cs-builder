@@ -1248,17 +1248,7 @@ function getDocxHelpers(){
   const ha=(text,opts={})=>new TextRun({text:String(text||''),font:"Calibri",size:opts.size||18,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
   const hp=(children,opts={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:opts.align||AlignmentType.LEFT,spacing:{before:0,after:0,line:240}});
 
-  // Logo cell — first column, rowSpan across all rows
-  function logoCell(rowSpan){
-    return new TableCell({
-      width:{size:HW[0],type:WidthType.DXA},
-      rowSpan,
-      shading:{fill:"FFFFFF",type:ShadingType.CLEAR},
-      borders:hallThin,margins:hcm(),
-      verticalAlign:VerticalAlign.CENTER,
-      children:[hp(ha("",{size:14}),{after:0})]
-    });
-  }
+  // logoCell removed — rowSpan in headers causes Word to silently drop header content
   function hspan(text,spanCols,fill,bold,size){
     const totalW=spanCols===6?5760:spanCols===3?2880:HW[spanCols]||HW[0];
     return new TableCell({
@@ -1294,65 +1284,53 @@ function getDocxHelpers(){
     const csRef = h.docNum || '';
     const gxpClass = h.gxpClass || '';
     const partEleven = h.partEleven || '';
+    const isWFtype = docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification';
 
-    // Row 0: logo | title + display name | Doc# / Rev
+    // No rowSpan anywhere — Word silently drops header content when vMerge is present
+    // Layout: 8 equal-ish cols [1962,960,960,960,960,960,960,2520]
+
+    // Row 0: title spans 6 cols | doc#/rev spans 2 cols
     const row0 = new TableRow({children:[
-      logoCell(docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'?5:4),
-      hspan(titleText + (displayTitle ? '  —  ' + displayTitle : ''), 6, "FFFFFF", true, 18),
-      hcell2("Doc #: ", docNum, HW[7], "FFFFFF"),
+      hspan(titleText + (displayTitle ? '  —  ' + displayTitle : ''), 6, HDR_FILL, true, 18),
+      hcell('Doc #:', HW[6], HDR_FILL, true),
+      hcell(docNum, HW[7], HDR_FILL, false),
     ]});
 
-    // Row 1: System | val | Module | val | Version | val | Site(s)
+    // Row 1: System | val | Module | val | Revision | val | Site(s) label+val
     const row1 = new TableRow({children:[
-      hcell("System:", HW[1], "FFFFFF", true),
-      hcell(h.system||"MasterControl", HW[2]),
-      hcell("Module:", HW[3], "FFFFFF", true),
-      hcell(module, HW[4]),
-      hcell("Revision:", HW[5], "FFFFFF", true),
-      hcell(h.revision||"1.0", HW[6]),
-      hcell2("Site(s): ", site, HW[7], "FFFFFF"),
+      hcell('System:', HW[0], LGRAY, true),
+      hcell(h.system||'MasterControl', HW[1]),
+      hcell('Module:', HW[2], LGRAY, true),
+      hcell(module, HW[3]),
+      hcell('Revision:', HW[4], LGRAY, true),
+      hcell(h.revision||'1.0', HW[5]),
+      hcell('Site(s):', HW[6], LGRAY, true),
+      hcell(site, HW[7]),
     ]});
 
-    const rows = [row0, row1];
+    // Row 2: val plan | iuv/cs ref
+    const row2 = new TableRow({children:[
+      hcell('Val. Plan:', HW[0], LGRAY, true),
+      hspan(valPlan, 3, 'FFFFFF'),
+      hcell(docTypeLabel==='IUV Package'?'Related CS:':isWFtype?'Parent Config Spec:':'Related IUV:', 2880, LGRAY, true),
+      hspan(docTypeLabel==='IUV Package'?csRef:isWFtype?'':iuvRef, 3, 'FFFFFF'),
+    ]});
 
-    if(docTypeLabel==='IUV Package'){
+    const rows = [row0, row1, row2];
+
+    if(isWFtype){
       rows.push(new TableRow({children:[
-        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
-        hspan(valPlan, 3, "FFFFFF"),
-        hcell("Related CS:", 2880, "F2F2F2", true),
-        hspan(csRef, 3, "FFFFFF"),
+        hcell('Related IUV:', HW[0], LGRAY, true),
+        hspan(iuvRef, 3, 'FFFFFF'),
+        hcell('GxP Class.:', 2880, LGRAY, true),
+        hspan(gxpClass, 3, 'FFFFFF'),
       ]}));
-    } else if(docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'){
+    } else if(docTypeLabel!=='IUV Package'){
       rows.push(new TableRow({children:[
-        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
-        hspan(valPlan, 3, "FFFFFF"),
-        hcell("Parent Config Spec:", 2880, "F2F2F2", true),
-        hspan("", 3, "FFFFFF"),
-      ]}));
-      rows.push(new TableRow({children:[
-        hcell("", HW[0], "F2F2F2"),
-        hspan("", 3, "FFFFFF"),
-        hcell("Related IUV Package:", 2880, "F2F2F2", true),
-        hspan(iuvRef, 3, "FFFFFF"),
-      ]}));
-      rows.push(new TableRow({children:[
-        hcell("GxP Classification:", HW[0], "F2F2F2", true),
-        hspan(gxpClass, 3, "FFFFFF"),
-        hcell("21 CFR Part 11 / Annex 11:", 2880, "F2F2F2", true),
-        hspan(partEleven, 3, "FFFFFF"),
-      ]}));
-    } else {
-      rows.push(new TableRow({children:[
-        hcell("Related Val. Plan:", HW[0], "F2F2F2", true),
-        hspan(valPlan, 3, "FFFFFF"),
-        hcell("Related IUV Package:", 2880, "F2F2F2", true),
-        hspan(iuvRef, 3, "FFFFFF"),
-      ]}));
-      rows.push(new TableRow({children:[
-        hcell("GxP Classification:", HW[0], "F2F2F2", true),
-        hspan(gxpClass, 3, "FFFFFF"),
-        hcell("21 CFR Part 11 / Annex 11:", 2880, "F2F2F2", true),
-        hspan(partEleven, 3, "FFFFFF"),
+        hcell('GxP Class.:', HW[0], LGRAY, true),
+        hspan(gxpClass, 3, 'FFFFFF'),
+        hcell('21 CFR Part 11:', 2880, LGRAY, true),
+        hspan(partEleven, 3, 'FFFFFF'),
       ]}));
     }
 
