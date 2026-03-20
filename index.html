@@ -1399,8 +1399,8 @@ async function buildConfigSpec(data){
   const isAQEM=data.docType==='aqem';
   const changeNote='Initial Release ('+h.docNum+')';
   const docTypeLabel=isAQEM?'AQEM Workflow Configuration Specification':isWF?'Workflow Configuration Specification':'Module Configuration Specification';
-  let pageHeader, pageFooter;
-  try { pageHeader=makeDocHeader(h,docTypeLabel,h.iuvPackage); pageFooter=makeFooter(); } catch(e) { console.warn('Header/footer build failed:',e); }
+  const pageHeader = (()=>{ try{ return makeDocHeader(h,docTypeLabel,h.iuvPackage); }catch(e){ console.warn('Header build failed:',e); return null; } })();
+  const pageFooter = (()=>{ try{ return makeFooter(); }catch(e){ console.warn('Footer build failed:',e); return null; } })();
 
   let configSection=[];
 
@@ -1659,8 +1659,8 @@ async function buildIUVPackage(data){
   const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('SCS-',''));
   const csRef=h.docNum;
   const changeNote='Initial release – '+csRef;
-  let iuvPageHeader, iuvPageFooter;
-  try { iuvPageHeader=makeDocHeader(h,'IUV Package',iuvDocNum); iuvPageFooter=makeFooter(); } catch(e) { console.warn('IUV header/footer build failed:',e); }
+  const iuvPageHeader = (()=>{ try{ return makeDocHeader(h,'IUV Package',iuvDocNum); }catch(e){ console.warn('IUV header build failed:',e); return null; } })();
+  const iuvPageFooter = (()=>{ try{ return makeFooter(); }catch(e){ console.warn('IUV footer build failed:',e); return null; } })();
 
 
   // AQEM IUV items — manual-only steps (not VoD Only)
