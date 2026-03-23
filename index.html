@@ -38,21 +38,21 @@ body{font-family:var(--sans);background:var(--surface);color:var(--ink);min-heig
 .prog-step:hover{color:var(--ink);}
 
 /* Type chooser */
-.type-chooser{max-width:1100px;margin:0 auto;padding:40px 24px;}
+.type-chooser{max-width:1100px;margin:0 auto;padding:40px 28px;}
 .chooser-title{font-size:22px;font-weight:600;margin-bottom:8px;}
 .chooser-sub{font-size:14px;color:var(--ink-muted);margin-bottom:32px;}
 .type-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:stretch;}
-.type-card{border:2px solid var(--border);border-radius:var(--rl);padding:24px 20px;cursor:pointer;transition:all .2s;background:white;display:flex;flex-direction:column;}
+.type-card{border:2px solid var(--border);border-radius:var(--rl);padding:18px 16px;cursor:pointer;transition:all .2s;background:white;display:flex;flex-direction:column;min-width:0;}
 .type-card:hover{border-color:var(--accent-mid);background:var(--accent-light);box-shadow:0 4px 16px rgba(92,61,143,.1);}
 .type-card.selected{border-color:var(--accent);background:var(--accent-light);}
-.type-icon{font-size:32px;margin-bottom:12px;}
+.type-icon{font-size:26px;margin-bottom:8px;}
 .type-label{font-size:16px;font-weight:600;margin-bottom:6px;}
 .type-desc{font-size:12px;color:var(--ink-muted);line-height:1.5;flex:1;}
 .type-docs{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;}
 .type-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--surface-2);color:var(--ink-soft);}
 
 /* Main */
-.main{max-width:1100px;margin:0 auto;padding:24px 24px;}
+.main{max-width:880px;margin:0 auto;padding:24px 28px;}
 
 /* Panels */
 .panel{background:white;border:1px solid var(--border-soft);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;display:none;}
@@ -284,7 +284,19 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
       <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
-        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="China">China</option><option value="Japan">Japan</option><option value="Israel">Israel</option><option value="Esseterre">Esseterre</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
+        <select id="site" multiple size="9" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple">
+          <option value="Corporate">Corporate</option>
+          <option value="PG Manufacturing">PG Manufacturing</option>
+          <option value="LFC">LFC</option>
+          <option value="Brazil">Brazil</option>
+          <option value="Ireland">Ireland</option>
+          <option value="China">China</option>
+          <option value="Japan">Japan</option>
+          <option value="Israel">Israel</option>
+          <option value="Esseterre">Esseterre</option>
+          <option value="All Sites">All Sites</option>
+        </select>
+        <div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -553,6 +565,52 @@ const SETTING_RATIONALE_PRESETS = [
   {v:"Cosmetic setting; no GxP impact.",l:"Administrative — no GxP impact"},
   {v:"custom",l:"✏️  Write custom rationale..."},
 ];
+// ── IUV Evidence Presets ───────────────────────────────────────────────────
+const IUV_EVIDENCE_PRESETS = [
+  {v:"",l:"— Select evidence type —"},
+  {v:"OPERATIONAL_FULL",l:"Variant 1 — Full operational evidence (stable, unchanged config)"},
+  {v:"OPERATIONAL_SPOTCHECK",l:"Variant 2 — Operational evidence + brief spot-check"},
+  {v:"ADMINISTRATIVE",l:"Variant 3 — Administrative setting (no IUV required)"},
+  {v:"NEW_CONFIG",l:"Variant 4 — New or recently changed configuration"},
+  {v:"custom",l:"✏️  Write custom evidence statement..."},
+];
+
+const IUV_EVIDENCE_TEXT = {
+  OPERATIONAL_FULL: "This configuration has been in continuous validated GxP production use since [implementation date]. MasterControl audit trail and system records confirm active use of this configuration across [X] sites with no documented configuration failures, data integrity issues, or deviation events attributable to this setting. Operational history reviewed by the undersigned and accepted as primary IUV evidence per the CSA risk-based approach (FDA CSA Guidance February 2026, Section V.A.5–6).",
+  OPERATIONAL_SPOTCHECK: "This configuration has been in continuous validated GxP production use since [implementation date] with no documented failures. In addition, the undersigned performed a brief exploratory verification on [date] confirming the current system configuration matches the documented intended use. Observation: [one sentence — describe what you looked at and what you saw].",
+  ADMINISTRATIVE: "Administrative setting. Not subject to IUV per risk classification. Confirmed present for completeness.",
+  NEW_CONFIG: "This configuration was [established / modified] on [date] as part of CC2026-013 CSA Transition Project. The undersigned performed exploratory verification on [date] confirming the configuration is in place and functioning as intended. Observation: [one sentence — describe what you did and what you saw].",
+};
+
+function resolveEvidence(item) {
+  if(!item.evidencePreset || item.evidencePreset === '') return item.evidenceCustom || '';
+  if(item.evidencePreset === 'custom') return item.evidenceCustom || '';
+  return IUV_EVIDENCE_TEXT[item.evidencePreset] || item.evidenceCustom || '';
+}
+
+const IUV_CONCLUSION_PRESETS = [
+  {v:"",l:"— Select conclusion —"},
+  {v:"PASS_OPERATIONAL","l":"Configuration performs as intended. Operational history accepted as primary IUV evidence. No additional testing required."},
+  {v:"PASS_SPOTCHECK",l:"Configuration confirmed present and performing as intended per exploratory spot-check."},
+  {v:"PASS_ADMIN",l:"Administrative setting. No IUV required per risk classification."},
+  {v:"PASS_NEW",l:"Configuration confirmed present and performing as intended per exploratory verification."},
+  {v:"custom",l:"✏️  Write custom conclusion..."},
+];
+
+const IUV_CONCLUSION_TEXT = {
+  PASS_OPERATIONAL: "Configuration performs as intended for its documented GxP use. No additional scripted testing required.",
+  PASS_SPOTCHECK: "Configuration confirmed present and performing as intended.",
+  PASS_ADMIN: "No IUV required. Administrative setting confirmed present for completeness.",
+  PASS_NEW: "Configuration confirmed present and performing as intended per its documented GxP use.",
+};
+
+function resolveConclusion(item) {
+  if(!item.conclusionPreset || item.conclusionPreset === '') return item.conclusionCustom || '';
+  if(item.conclusionPreset === 'custom') return item.conclusionCustom || '';
+  return IUV_CONCLUSION_TEXT[item.conclusionPreset] || item.conclusionCustom || '';
+}
+
+
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 function goTo(idx) {
@@ -630,7 +688,7 @@ function confirmType() {
 // ── Settings (module) ──────────────────────────────────────────────────────
 function addSetting(data) {
   const id=++sc;
-  const s=data||{id,num:settings.length+1,name:'',value:'',riskClass:'Risk-Relevant',ratPreset:'',ratCustom:'',iuvReq:'Yes'};
+  const s=data||{id,num:settings.length+1,name:'',value:'',riskClass:'Risk-Relevant',ratPreset:'',ratCustom:'',iuvReq:'Yes',evidencePreset:'',evidenceCustom:'',conclusionPreset:'',conclusionCustom:'',testAction:'',expectedResult:''};
   if(!data) s.id=id;
   settings.push(s);
   renderSetting(s);
@@ -666,7 +724,7 @@ function renderSetting(s) {
             <option value="Administrative"${s.riskClass==='Administrative'?' selected':''}>Administrative</option>
           </select></div>
         <div class="field"><label class="lbl">IUV Required</label>
-          <select onchange="updS(${s.id},'iuvReq',this.value)">
+          <select onchange="updS(${s.id},'iuvReq',this.value);toggleSIuv(${s.id},this.value)">
             <option value="Yes"${s.iuvReq==='Yes'?' selected':''}>Yes</option>
             <option value="No"${s.iuvReq==='No'?' selected':''}>No</option>
             <option value="N/A"${s.iuvReq==='N/A'?' selected':''}>N/A</option>
@@ -681,6 +739,27 @@ function renderSetting(s) {
             placeholder="Describe why this configuration is needed from a GxP perspective..."
             oninput="updS(${s.id},'ratCustom',this.value)">${s.ratCustom}</textarea>
         </div></div>
+      <!-- IUV Evidence fields — shown when IUV Required = Yes -->
+      <div id="siuv-${s.id}" style="display:${s.iuvReq==='Yes'?'block':'none'}">
+        <hr style="border:none;border-top:1px dashed var(--border-soft);margin:10px 0">
+        <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">IUV Evidence (for IUV Package)</div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Test Action</label>
+          <input type="text" value="${s.testAction||''}" placeholder="e.g. Navigate to AQEM module settings and confirm Active Sites are configured as documented" oninput="updS(${s.id},'testAction',this.value)"></div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Expected Result</label>
+          <input type="text" value="${s.expectedResult||''}" placeholder="e.g. All five active sites are listed and enabled as documented in this Config Spec" oninput="updS(${s.id},'expectedResult',this.value)"></div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Evidence Statement</label>
+          <select onchange="updSEvidence(${s.id},'preset',this.value)">${IUV_EVIDENCE_PRESETS.map(e=>`<option value="${e.v}"${s.evidencePreset===e.v?' selected':''}>${e.l}</option>`).join('')}</select>
+          <textarea class="rat-custom${(s.evidencePreset==='custom'||(!s.evidencePreset&&s.evidenceCustom))?' visible':''}" id="sevid-${s.id}" rows="3"
+            placeholder="Describe the evidence reviewed..." style="margin-top:5px"
+            oninput="updS(${s.id},'evidenceCustom',this.value)">${s.evidenceCustom||''}</textarea>
+        </div>
+        <div class="field"><label class="lbl">Conclusion</label>
+          <select onchange="updSEvidence(${s.id},'conclusion',this.value)">${IUV_CONCLUSION_PRESETS.map(e=>`<option value="${e.v}"${s.conclusionPreset===e.v?' selected':''}>${e.l}</option>`).join('')}</select>
+          <textarea class="rat-custom${(s.conclusionPreset==='custom'||(!s.conclusionPreset&&s.conclusionCustom))?' visible':''}" id="sconc-${s.id}" rows="2"
+            placeholder="State your conclusion..." style="margin-top:5px"
+            oninput="updS(${s.id},'conclusionCustom',this.value)">${s.conclusionCustom||''}</textarea>
+        </div>
+      </div>
       <div class="card-actions">
         <button class="btn btn-ghost" onclick="moveS(${s.id},-1)">↑</button>
         <button class="btn btn-ghost" onclick="moveS(${s.id},1)">↓</button>
@@ -693,6 +772,35 @@ function renderSetting(s) {
 
 function updS(id,f,v){const s=settings.find(x=>x.id===id);if(s)s[f]=v;}
 function updSPrev(id){const s=settings.find(x=>x.id===id),el=document.getElementById('sprev-'+id);if(el&&s){el.textContent=s.name||'Click to add setting details';el.className='card-preview'+(s.name?'':' ph-txt');}}
+function updSEvidence(id,field,val){
+  const s=settings.find(x=>x.id===id);
+  if(!s) return;
+  if(field==='preset'){
+    s.evidencePreset=val;
+    const cf=document.getElementById('sevid-'+id);
+    if(cf) cf.classList.toggle('visible', val==='custom'||val==='');
+    // Auto-fill custom textarea with preset text for easy editing
+    if(val && val!=='custom' && IUV_EVIDENCE_TEXT[val]){
+      const cf2=document.getElementById('sevid-'+id);
+      if(cf2&&!s.evidenceCustom){ cf2.value=IUV_EVIDENCE_TEXT[val]; s.evidenceCustom=IUV_EVIDENCE_TEXT[val]; }
+    }
+    // Auto-select matching conclusion
+    const concMap={OPERATIONAL_FULL:'PASS_OPERATIONAL',OPERATIONAL_SPOTCHECK:'PASS_SPOTCHECK',ADMINISTRATIVE:'PASS_ADMIN',NEW_CONFIG:'PASS_NEW'};
+    if(concMap[val]&&!s.conclusionPreset){
+      s.conclusionPreset=concMap[val];
+      const csel=document.getElementById('sconc-'+id)?.previousElementSibling;
+      if(csel) csel.value=concMap[val];
+    }
+  } else {
+    s.conclusionPreset=val;
+    const cf=document.getElementById('sconc-'+id);
+    if(cf) cf.classList.toggle('visible', val==='custom'||val==='');
+  }
+}
+function toggleSIuv(id,val){
+  const el=document.getElementById('siuv-'+id);
+  if(el) el.style.display=val==='Yes'?'block':'none';
+}
 function updSBadge(id){const s=settings.find(x=>x.id===id),b=document.getElementById('sbadge-'+id);if(b&&s){const rr=s.riskClass==='Risk-Relevant';b.className='card-badge '+(rr?'b-rr':'b-adm');b.textContent=rr?'Risk-Relevant':'Administrative';}}
 function updSRat(id,v){const s=settings.find(x=>x.id===id);if(s)s.ratPreset=v;const cf=document.getElementById('srat-'+id);if(cf){if(v==='custom'||v===''){cf.classList.add('visible');}else{cf.classList.remove('visible');if(s)s.ratCustom='';}}}
 function getSRat(s){if(s.ratPreset==='custom'||s.ratPreset==='')return s.ratCustom;return s.ratPreset;}
@@ -731,7 +839,8 @@ function addStep(data) {
   const id=++stc;
   const s=data||{id,num:steps.length+1,name:'',stepType:'',branch:'both',riskClass:'Risk-Relevant',
     assignedTo:'',reassignAuth:'',eSig:'Yes',ratPreset:'',ratCustom:'',iuvRef:'',
-    variesBySite:false,siteAssignments:{}};
+    variesBySite:false,siteAssignments:{},
+    evidencePreset:'',evidenceCustom:'',conclusionPreset:'',conclusionCustom:'',testAction:'',expectedResult:''};
   if(!data) s.id=id;
   steps.push(s);
   renderStep(s);
@@ -820,6 +929,27 @@ function renderStep(s) {
             oninput="updW(${s.id},'ratCustom',this.value)">${s.ratCustom}</textarea>
         </div>
       </div>
+      <!-- IUV Evidence fields for Risk-Relevant steps -->
+      <div id="wiuv-${s.id}" style="display:${isRR?'block':'none'}">
+        <hr style="border:none;border-top:1px dashed var(--border-soft);margin:10px 0">
+        <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">IUV Evidence (for IUV Package)</div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Test Action</label>
+          <input type="text" value="${s.testAction||''}" placeholder="e.g. Initiate a test record and confirm it routes to the correct role at this step" oninput="updW(${s.id},'testAction',this.value)"></div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Expected Result</label>
+          <input type="text" value="${s.expectedResult||''}" placeholder="e.g. Record routes to QA Approver role as configured" oninput="updW(${s.id},'expectedResult',this.value)"></div>
+        <div class="field" style="margin-bottom:8px"><label class="lbl">Evidence Statement</label>
+          <select onchange="updWEvidence(${s.id},'preset',this.value)">${IUV_EVIDENCE_PRESETS.map(e=>`<option value="${e.v}"${s.evidencePreset===e.v?' selected':''}>${e.l}</option>`).join('')}</select>
+          <textarea class="rat-custom${(s.evidencePreset==='custom'||(!s.evidencePreset&&s.evidenceCustom))?' visible':''}" id="wevid-${s.id}" rows="3"
+            placeholder="Describe the evidence reviewed..." style="margin-top:5px"
+            oninput="updW(${s.id},'evidenceCustom',this.value)">${s.evidenceCustom||''}</textarea>
+        </div>
+        <div class="field"><label class="lbl">Conclusion</label>
+          <select onchange="updWEvidence(${s.id},'conclusion',this.value)">${IUV_CONCLUSION_PRESETS.map(e=>`<option value="${e.v}"${s.conclusionPreset===e.v?' selected':''}>${e.l}</option>`).join('')}</select>
+          <textarea class="rat-custom${(s.conclusionPreset==='custom'||(!s.conclusionPreset&&s.conclusionCustom))?' visible':''}" id="wconc-${s.id}" rows="2"
+            placeholder="State your conclusion..." style="margin-top:5px"
+            oninput="updW(${s.id},'conclusionCustom',this.value)">${s.conclusionCustom||''}</textarea>
+        </div>
+      </div>
       <div class="card-actions">
         <button class="btn btn-ghost" onclick="moveW(${s.id},-1)">↑</button>
         <button class="btn btn-ghost" onclick="moveW(${s.id},1)">↓</button>
@@ -889,10 +1019,36 @@ function refreshAllSiteTables() {
     }
   });
 }
+function updWEvidence(id,field,val){
+  const s=steps.find(x=>x.id===id);
+  if(!s) return;
+  if(field==='preset'){
+    s.evidencePreset=val;
+    const cf=document.getElementById('wevid-'+id);
+    if(cf) cf.classList.toggle('visible', val==='custom'||val==='');
+    if(val && val!=='custom' && IUV_EVIDENCE_TEXT[val]){
+      const cf2=document.getElementById('wevid-'+id);
+      if(cf2&&!s.evidenceCustom){ cf2.value=IUV_EVIDENCE_TEXT[val]; s.evidenceCustom=IUV_EVIDENCE_TEXT[val]; }
+    }
+    const concMap={OPERATIONAL_FULL:'PASS_OPERATIONAL',OPERATIONAL_SPOTCHECK:'PASS_SPOTCHECK',ADMINISTRATIVE:'PASS_ADMIN',NEW_CONFIG:'PASS_NEW'};
+    if(concMap[val]&&!s.conclusionPreset){
+      s.conclusionPreset=concMap[val];
+      const csel=document.getElementById('wconc-'+id)?.previousElementSibling;
+      if(csel) csel.value=concMap[val];
+    }
+  } else {
+    s.conclusionPreset=val;
+    const cf=document.getElementById('wconc-'+id);
+    if(cf) cf.classList.toggle('visible', val==='custom'||val==='');
+  }
+}
 function toggleRRDetails(id) {
   const s=steps.find(x=>x.id===id);
   const el=document.getElementById('rr-detail-'+id);
-  if(el&&s) el.style.display=s.riskClass==='Risk-Relevant'?'block':'none';
+  const iel=document.getElementById('wiuv-'+id);
+  const isRR=s&&s.riskClass==='Risk-Relevant';
+  if(el) el.style.display=isRR?'block':'none';
+  if(iel) iel.style.display=isRR?'block':'none';
 }
 
 function toggleCard(id){document.getElementById(id).classList.toggle('open');}
@@ -1736,35 +1892,32 @@ async function buildIUVPackage(data){
   // Row fills: F2F2F2 label / FFFFFF content / D9D9D9 Result / FFF2CC Notes
   const iuvItems = isWF
     ? data.steps.map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||""}))
-    : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||""}));
+    : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||'',testAction:s.testAction||'',expectedResult:s.expectedResult||'',evidence:resolveEvidence(s),conclusion:resolveConclusion(s)}));
 
   const SW=[1400,8855];
   function iuvStepBlock(item,idx){
+    const testActionText = item.testAction||'[Describe the specific action to take to verify this configuration is in place and functioning as intended]';
+    const expectedText = item.expectedResult||'[Describe what must be observed for this step to pass]';
+    const evidenceText = item.evidence||'[Describe evidence reviewed — operational history, system records, or exploratory testing]';
+    const conclusionText = item.conclusion||'[State conclusion]';
     return new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
-      // Step header row — full width span, E5DFEC fill (matches template)
       new TableRow({children:[
         new TableCell({width:{size:W_IUV,type:WidthType.DXA},columnSpan:2,
           shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
           children:[p(a("Step "+(idx+1)+":   "+item.name,{bold:true,size:18}),{after:0})]})
       ]}),
-      // Reference row
       new TableRow({children:[dc("Reference:",SW[0],LGRAY,true),dc(csRef+" — "+item.ref,SW[1])]}),
-      // Test Action
-      new TableRow({children:[dc("Test Action:",SW[0],LGRAY,true),dc("[Describe the specific action to take to verify this configuration is in place and functioning as intended]",SW[1])]}),
-      // Expected Result
-      new TableRow({children:[dc("Expected Result / Acceptance Criterion:",SW[0],LGRAY,true),dc("[Describe what must be observed for this step to pass]",SW[1])]}),
-      // Evidence
-      new TableRow({children:[dc("Evidence:",SW[0],LGRAY,true),dc("☐ Screenshot(s)   ☐ Screen recording   ☐ Witnessed walkthrough    ☐ System Record",SW[1])]}),
-      // Result — D9D9D9 label, no fill on value cell (matches template)
+      new TableRow({children:[dc("Test Action:",SW[0],LGRAY,true),dc(testActionText,SW[1])]}),
+      new TableRow({children:[dc("Expected Result / Acceptance Criterion:",SW[0],LGRAY,true),dc(expectedText,SW[1])]}),
+      new TableRow({children:[dc("Evidence:",SW[0],LGRAY,true),dc(evidenceText,SW[1])]}),
       new TableRow({children:[
         dc("Result:",SW[0],MGRAY,true),
         new TableCell({width:{size:SW[1],type:WidthType.DXA},borders:allThin,margins:cm(),
           children:[p(a("☐ Pass          ☐ Fail          ☐ N/A",{size:18}),{after:0})]}),
       ]}),
-      // Notes — FFF2CC amber label (matches template)
       new TableRow({children:[
-        dc("Notes:",SW[0],AMBER,true),
-        dc("[Record any unexpected behavior, discrepancy reference number, or N/A if none]",SW[1]),
+        dc("Notes / Conclusion:",SW[0],AMBER,true),
+        dc(conclusionText,SW[1]),
       ]}),
     ]});
   }
