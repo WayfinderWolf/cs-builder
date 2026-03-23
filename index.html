@@ -1236,149 +1236,18 @@ function getDocxHelpers(){
       new TableRow({children:[dc(h.effectiveDate||"MM/DD/YY",CHW[0]),dc(h.revision||"1.0",CHW[1]),dc(h.author||"",CHW[2]),dc(note,CHW[3])]}),
     ]});
   };
-  // ── Header table (repeats every page) ────────────────────────────────────
-  // Template: 8 cols [1962,960,960,960,960,960,960,2520] total 10242
-  // Row 0: logo cell | title (span 6) | Doc#/Rev (right)
-  // Row 1: logo cell | System | val | Module | val | Version | val | Site(s)
-  // Row 2+: metadata rows
-  const HW=[1962,960,960,960,960,960,960,2520];
-  const hthin={style:BorderStyle.SINGLE,size:4,color:"BFBFBF"};
-  const hallThin={top:hthin,bottom:hthin,left:hthin,right:hthin};
-  const hcm=()=>({top:60,bottom:60,left:100,right:100});
-  const ha=(text,opts={})=>new TextRun({text:String(text||''),font:"Calibri",size:opts.size||18,bold:opts.bold||false,italics:opts.italic||false,color:opts.color});
-  const hp=(children,opts={})=>new Paragraph({children:Array.isArray(children)?children:[children],alignment:opts.align||AlignmentType.LEFT,spacing:{before:0,after:0,line:240}});
-
-  // logoCell removed — rowSpan in headers causes Word to silently drop header content
-  function hspan(text,spanCols,fill,bold,size){
-    const totalW=spanCols===6?5760:spanCols===3?2880:HW[spanCols]||HW[0];
-    return new TableCell({
-      width:{size:totalW,type:WidthType.DXA},
-      columnSpan:spanCols,
-      shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},
-      borders:hallThin,margins:hcm(),
-      verticalAlign:VerticalAlign.CENTER,
-      children:[hp(ha(text||"",{bold:bold||false,size:size||18}),{after:0})]
-    });
-  }
-  function hcell(text,w,fill,bold){
-    return new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:hallThin,margins:hcm(),verticalAlign:VerticalAlign.CENTER,children:[hp(ha(text||"",{bold:bold||false,size:16}),{after:0})]});
-  }
-  function hcell2(label,value,w,fill){
-    return new TableCell({width:{size:w,type:WidthType.DXA},shading:{fill:fill||"FFFFFF",type:ShadingType.CLEAR},borders:hallThin,margins:hcm(),verticalAlign:VerticalAlign.CENTER,
-      children:[hp([ha(label,{bold:true,size:16}),ha(" "+value,{size:16})],{after:0})]});
-  }
-
-  function makeDocHeader(h, docTypeLabel, iuvDocNum) {
-    const titleText = docTypeLabel==='IUV Package'
-      ? 'Title – IUV Package'
-      : docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification'
-        ? 'Title – Workflow Configuration Specification'
-        : 'Title – Module Configuration Specification';
-    const docNum = iuvDocNum || h.docNum || '';
-    const site = h.site || '';
-    const module = h.module || '';
-    const workflowName = h.workflowName || '';
-    const displayTitle = workflowName ? (workflowName + (site ? ' — ' + site : '')) : (module || '');
-    const valPlan = h.valPlan || 'PLAN-0028 MasterControl CSA Validation Plan';
-    const iuvRef = iuvDocNum || h.iuvPackage || '';
-    const csRef = h.docNum || '';
-    const gxpClass = h.gxpClass || '';
-    const partEleven = h.partEleven || '';
-    const isWFtype = docTypeLabel==='Workflow Configuration Specification'||docTypeLabel==='AQEM Workflow Configuration Specification';
-
-    // No rowSpan anywhere — Word silently drops header content when vMerge is present
-    // Layout: 8 equal-ish cols [1962,960,960,960,960,960,960,2520]
-
-    // Row 0: title spans 6 cols | doc#/rev spans 2 cols
-    const row0 = new TableRow({children:[
-      hspan(titleText + (displayTitle ? '  —  ' + displayTitle : ''), 6, HDR_FILL, true, 18),
-      hcell('Doc #:', HW[6], HDR_FILL, true),
-      hcell(docNum, HW[7], HDR_FILL, false),
-    ]});
-
-    // Row 1: System | val | Module | val | Revision | val | Site(s) label+val
-    const row1 = new TableRow({children:[
-      hcell('System:', HW[0], LGRAY, true),
-      hcell(h.system||'MasterControl', HW[1]),
-      hcell('Module:', HW[2], LGRAY, true),
-      hcell(module, HW[3]),
-      hcell('Revision:', HW[4], LGRAY, true),
-      hcell(h.revision||'1.0', HW[5]),
-      hcell('Site(s):', HW[6], LGRAY, true),
-      hcell(site, HW[7]),
-    ]});
-
-    // Row 2: val plan | iuv/cs ref
-    const row2 = new TableRow({children:[
-      hcell('Val. Plan:', HW[0], LGRAY, true),
-      hspan(valPlan, 3, 'FFFFFF'),
-      hcell(docTypeLabel==='IUV Package'?'Related CS:':isWFtype?'Parent Config Spec:':'Related IUV:', 2880, LGRAY, true),
-      hspan(docTypeLabel==='IUV Package'?csRef:isWFtype?'':iuvRef, 3, 'FFFFFF'),
-    ]});
-
-    const rows = [row0, row1, row2];
-
-    if(isWFtype){
-      rows.push(new TableRow({children:[
-        hcell('Related IUV:', HW[0], LGRAY, true),
-        hspan(iuvRef, 3, 'FFFFFF'),
-        hcell('GxP Class.:', 2880, LGRAY, true),
-        hspan(gxpClass, 3, 'FFFFFF'),
-      ]}));
-    } else if(docTypeLabel!=='IUV Package'){
-      rows.push(new TableRow({children:[
-        hcell('GxP Class.:', HW[0], LGRAY, true),
-        hspan(gxpClass, 3, 'FFFFFF'),
-        hcell('21 CFR Part 11:', 2880, LGRAY, true),
-        hspan(partEleven, 3, 'FFFFFF'),
-      ]}));
-    }
-
-    return new Table({
-      width:{size:10242,type:WidthType.DXA},
-      columnWidths:HW,
-      layout:TableLayoutType.FIXED,
-      rows,
-    });
-  }
-
-  // ── Footer (confidentiality + page number) ─────────────────────────────────
-  function makeFooter() {
-    // Use docx.Header/Footer/PageNumber from the browser bundle
-    // PageNumber is an enum object {CURRENT, TOTAL_PAGES} — not a constructor
-    const PN = window.docx.PageNumber || {};
-    const hasPgNum = PN && PN.CURRENT;
-    const footerChildren = [
-      new TextRun({text:"CONFIDENTIAL — Property of the company. This information is proprietary and may not be copied or distributed without consent.",font:"Calibri",size:14,italics:true,color:"808080"}),
-    ];
-    if(hasPgNum){
-      footerChildren.push(new TextRun({text:"    ",font:"Calibri",size:14,color:"808080"}));
-      footerChildren.push(new TextRun({children:[PN.CURRENT],font:"Calibri",size:14,color:"808080"}));
-      footerChildren.push(new TextRun({text:" of ",font:"Calibri",size:14,color:"808080"}));
-      footerChildren.push(new TextRun({children:[PN.TOTAL_PAGES],font:"Calibri",size:14,color:"808080"}));
-    }
-    return new Paragraph({
-      children:footerChildren,
-      alignment:AlignmentType.LEFT,
-      spacing:{before:0,after:0},
-    });
-  }
 
   return{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    PURPLE,HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_CS,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter};
+    PURPLE,HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_CS,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist};
 }
 
 // ── Config Spec builder — matched to corporate templates ─────────────────────
 async function buildConfigSpec(data){
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,AlignmentType,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    HDR_FILL,LGRAY,BGRAY,MGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter}=getDocxHelpers();
+    HDR_FILL,LGRAY,BGRAY,MGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
-  const isAQEM=data.docType==='aqem';
   const changeNote='Initial Release ('+h.docNum+')';
-  const docTypeLabel=isAQEM?'AQEM Workflow Configuration Specification':isWF?'Workflow Configuration Specification':'Module Configuration Specification';
-  const pageHeader = makeDocHeader(h,docTypeLabel,h.iuvPackage);
-  const pageFooter = makeFooter();
 
   let configSection=[];
 
@@ -1608,7 +1477,7 @@ async function buildConfigSpec(data){
   const changeHist=makeChangeHist(h,changeNote,W_CS);
 
   const doc=new Document({sections:[{
-    properties:{page:{size:{width:12240,height:15840},margin:{top:2400,right:1008,bottom:1440,left:1008}},headers:{default:new (window.docx.Header)({children:[pageHeader]})},footers:{default:new (window.docx.Footer)({children:[pageFooter]})}},
+    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
     children:[
       secHdr('1.  INTENDED USE'),
       p(a(h.intendedUse||''),{after:80}),
@@ -1631,14 +1500,12 @@ async function buildConfigSpec(data){
 // ── IUV Package builder — matched to corporate template ──────────────────────
 async function buildIUVPackage(data){
   const {Document,Packer,Table,TableRow,TableCell,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign,TableLayoutType,
-    HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist,makeDocHeader,makeFooter}=getDocxHelpers();
+    HDR_FILL,LGRAY,MGRAY,BGRAY,AMBER,thin,allThin,cm,W_IUV,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
   const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('SCS-',''));
   const csRef=h.docNum;
   const changeNote='Initial release – '+csRef;
-  const iuvPageHeader = makeDocHeader(h,'IUV Package',iuvDocNum);
-  const iuvPageFooter = makeFooter();
 
 
   // AQEM IUV items — manual-only steps (not VoD Only)
@@ -1681,7 +1548,7 @@ async function buildIUVPackage(data){
     }
 
     const aqemDoc=new Document({sections:[{
-      properties:{page:{size:{width:12240,height:15840},margin:{top:2400,right:1008,bottom:1440,left:1008}},headers:{default:new (window.docx.Header)({children:[iuvPageHeader]})},footers:{default:new (window.docx.Footer)({children:[iuvPageFooter]})}},
+      properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
       children:[
         secHdr('1.   PURPOSE AND SCOPE'),
         p(a('This IUV Evidence Package documents the Intended Use Verification performed to confirm that the MasterControl AQEM '+h.workflowName+' workflow configuration, as documented in Configuration Specification '+csRef+', supports its intended GxP use. IUV is performed against each risk-relevant configuration. VoD-covered steps are evidenced by the VoD report referenced in Section 2. Manual IUV steps follow in Section 4.'),{after:0}),
@@ -1795,7 +1662,7 @@ async function buildIUVPackage(data){
   // IUV template structure:
   // 1. PURPOSE AND SCOPE → 2. PRE-EXECUTION CHECKLIST → 3. IUV TEST STEPS → 4. IUV SUMMARY → 5. CHANGE HISTORY
   const doc=new Document({sections:[{
-    properties:{page:{size:{width:12240,height:15840},margin:{top:2400,right:1008,bottom:1440,left:1008}},headers:{default:new (window.docx.Header)({children:[iuvPageHeader]})},footers:{default:new (window.docx.Footer)({children:[iuvPageFooter]})}},
+    properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
     children:[
       secHdr("1.   PURPOSE AND SCOPE"),
       p(a("This IUV Evidence Package documents the Intended Use Verification performed to confirm that the MasterControl "+h.module+(isWF?" — "+h.workflowName:"")+" configuration, as documented in Configuration Specification "+csRef+", supports its intended GxP use. IUV is performed against each risk-relevant configuration identified in the Configuration Specification. Administrative configurations are excluded from IUV scope."),{after:0}),
