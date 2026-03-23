@@ -284,7 +284,7 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
       <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
-        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
+        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="China">China</option><option value="Japan">Japan</option><option value="Israel">Israel</option><option value="Esseterre">Esseterre</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -730,7 +730,8 @@ function clearWfImage() {
 function addStep(data) {
   const id=++stc;
   const s=data||{id,num:steps.length+1,name:'',stepType:'',branch:'both',riskClass:'Risk-Relevant',
-    assignedTo:'',reassignAuth:'',eSig:'Yes',ratPreset:'',ratCustom:'',iuvRef:''};
+    assignedTo:'',reassignAuth:'',eSig:'Yes',ratPreset:'',ratCustom:'',iuvRef:'',
+    variesBySite:false,siteAssignments:{}};
   if(!data) s.id=id;
   steps.push(s);
   renderStep(s);
@@ -743,14 +744,15 @@ function renderStep(s) {
   const isRR=s.riskClass==='Risk-Relevant';
   const rcBadge=isRR?'<span class="card-badge b-rr">Risk-Relevant</span>':'<span class="card-badge b-adm">Administrative</span>';
   const branchBadge=s.branch&&s.branch!=='both'&&s.branch!=='All paths'?'<span class="card-badge b-all" style="background:var(--surface-3);color:var(--ink-soft)">'+s.branch+'</span>':'';
+  const variesBadge=s.variesBySite?'<span class="card-badge" style="background:var(--amber-light);color:var(--amber)">Site Varies</span>':'';
   const ratOpts=RATIONALE_PRESETS.map(r=>`<option value="${r.v}"${s.ratPreset===r.v?' selected':''}>${r.l}</option>`).join('');
   const showCustom=s.ratPreset==='custom'||(s.ratCustom&&!RATIONALE_PRESETS.find(r=>r.v===s.ratPreset&&r.v!==''));
-  // Show detail fields only for Risk-Relevant steps
   const detailDisplay=isRR?'block':'none';
+  const siteRows=buildSiteAssignRows(s);
   div.innerHTML=`
     <div class="card-hdr" onclick="toggleCard('wcard-${s.id}')">
       <div class="card-num">${s.num}</div>
-      ${rcBadge}${branchBadge}
+      ${rcBadge}${branchBadge}${variesBadge}
       <div class="card-preview${s.name?'':' ph-txt'}" id="wprev-${s.id}">${s.name||'Click to edit step details'}</div>
       <div class="expand-icon">▼</div>
     </div>
@@ -771,19 +773,39 @@ function renderStep(s) {
       </div>
       <div class="fg fg3">
         <div class="field"><label class="lbl">Branch / Scope</label>
-          <input type="text" value="${s.branch==='both'?'All paths':s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':s.branch||''}" placeholder="e.g. All paths, Tier 1 only, Tier 2 only" oninput="updW(${s.id},'branch',this.value)"></div>
+          <input type="text" value="${s.branch==='both'?'All paths':s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':s.branch||''}" placeholder="e.g. All paths, Tier 1 only" oninput="updW(${s.id},'branch',this.value)"></div>
         <div class="field"><label class="lbl">Display Number</label>
           <input type="text" value="${s.num}" oninput="updW(${s.id},'num',this.value)"></div>
         <div class="field"></div>
       </div>
-      <!-- Risk-Relevant detail fields — hidden for Administrative steps -->
       <div id="rr-detail-${s.id}" style="display:${detailDisplay}">
         <hr style="border:none;border-top:1px solid var(--border-soft);margin:10px 0">
-        <div class="fg">
+        <!-- Assigned To — normal or site-vary mode -->
+        <div class="fg" id="assign-single-${s.id}" style="display:${s.variesBySite?'none':'grid'}">
           <div class="field"><label class="lbl">Assigned To</label>
             <input type="text" value="${s.assignedTo}" placeholder="e.g. QA Approver" oninput="updW(${s.id},'assignedTo',this.value)"></div>
           <div class="field"><label class="lbl">Reassign Authority</label>
-            <input type="text" value="${s.reassignAuth||''}" placeholder="e.g. None, Doc Control, QA Approver" oninput="updW(${s.id},'reassignAuth',this.value)"></div>
+            <input type="text" value="${s.reassignAuth||''}" placeholder="e.g. None, Doc Control" oninput="updW(${s.id},'reassignAuth',this.value)"></div>
+        </div>
+        <!-- Site-vary toggle -->
+        <div style="margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--ink-soft)">
+            <input type="checkbox" id="wvary-${s.id}" ${s.variesBySite?'checked':''} onchange="toggleSiteVary(${s.id},this.checked)" style="width:auto">
+            Assignment varies by site
+          </label>
+        </div>
+        <!-- Site assignment sub-table — shown when variesBySite is true -->
+        <div id="assign-sites-${s.id}" style="display:${s.variesBySite?'block':'none'};margin-bottom:10px">
+          <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Per-Site Assignments</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px" id="sitetbl-${s.id}">
+            <thead><tr style="background:var(--accent-light)">
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--border-soft);font-weight:600;color:var(--accent);width:28%">Site</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--border-soft);font-weight:600;color:var(--accent)">Assigned To</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--border-soft);font-weight:600;color:var(--accent)">Reassign Authority</th>
+            </tr></thead>
+            <tbody id="sitetbody-${s.id}">${siteRows}</tbody>
+          </table>
+          <div style="font-size:10px;color:var(--ink-muted);margin-top:4px">Sites are pulled from the Site / Scope field in the Header. Add sites there to add rows here.</div>
         </div>
         <div class="fg">
           <div class="field"><label class="lbl">E-Signature</label>
@@ -808,6 +830,65 @@ function renderStep(s) {
   div.classList.add('open');
 }
 
+function buildSiteAssignRows(s) {
+  const sites = getSiteValue().split(', ').filter(Boolean);
+  if(!sites.length) return '<tr><td colspan="3" style="padding:6px 8px;color:var(--ink-muted);font-style:italic;border:1px solid var(--border-soft)">No sites selected — add sites in Header to populate this table</td></tr>';
+  return sites.map(site => {
+    const existing = (s.siteAssignments && s.siteAssignments[site]) || {assignedTo:'', reassignAuth:''};
+    return `<tr>
+      <td style="padding:4px 8px;border:1px solid var(--border-soft);background:var(--surface-2);font-weight:500">${site}</td>
+      <td style="padding:2px 4px;border:1px solid var(--border-soft)"><input type="text" value="${existing.assignedTo||''}" placeholder="e.g. Doc Control — ${site}" style="width:100%;border:none;background:transparent;font-size:12px;padding:3px 4px;outline:none" oninput="updWSiteAssign(${s.id},'${site}','assignedTo',this.value)"></td>
+      <td style="padding:2px 4px;border:1px solid var(--border-soft)"><input type="text" value="${existing.reassignAuth||''}" placeholder="e.g. None" style="width:100%;border:none;background:transparent;font-size:12px;padding:3px 4px;outline:none" oninput="updWSiteAssign(${s.id},'${site}','reassignAuth',this.value)"></td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleSiteVary(id, checked) {
+  const s=steps.find(x=>x.id===id);
+  if(!s) return;
+  s.variesBySite=checked;
+  if(!s.siteAssignments) s.siteAssignments={};
+  document.getElementById('assign-single-'+id).style.display=checked?'none':'grid';
+  document.getElementById('assign-sites-'+id).style.display=checked?'block':'none';
+  // Rebuild site rows in case sites changed
+  if(checked) {
+    const tbody=document.getElementById('sitetbody-'+id);
+    if(tbody) tbody.innerHTML=buildSiteAssignRows(s);
+  }
+  // Update badge
+  const card=document.getElementById('wcard-'+id);
+  if(card){
+    const badges=card.querySelectorAll('.card-badge');
+    // Remove existing site-varies badge
+    badges.forEach(b=>{ if(b.textContent==='Site Varies') b.remove(); });
+    if(checked){
+      const hdr=card.querySelector('.card-hdr');
+      const badge=document.createElement('span');
+      badge.className='card-badge';
+      badge.style.cssText='background:var(--amber-light);color:var(--amber)';
+      badge.textContent='Site Varies';
+      hdr.insertBefore(badge, hdr.querySelector('.card-preview'));
+    }
+  }
+}
+
+function updWSiteAssign(stepId, site, field, value) {
+  const s=steps.find(x=>x.id===stepId);
+  if(!s) return;
+  if(!s.siteAssignments) s.siteAssignments={};
+  if(!s.siteAssignments[site]) s.siteAssignments[site]={assignedTo:'',reassignAuth:''};
+  s.siteAssignments[site][field]=value;
+}
+
+// Refresh site sub-tables when sites change in header
+function refreshAllSiteTables() {
+  steps.forEach(s => {
+    if(s.variesBySite) {
+      const tbody=document.getElementById('sitetbody-'+s.id);
+      if(tbody) tbody.innerHTML=buildSiteAssignRows(s);
+    }
+  });
+}
 function toggleRRDetails(id) {
   const s=steps.find(x=>x.id===id);
   const el=document.getElementById('rr-detail-'+id);
@@ -1138,7 +1219,7 @@ function collectData(){
       iuvRef2:document.getElementById('iuvRef2').value,
     },
     settings:settings.map(s=>({...s,ratResolved:getSRat(s)})),
-    steps:steps.map(s=>({...s,ratResolved:getWRat(s)})),
+    steps:steps.map(s=>({...s,ratResolved:getWRat(s),siteAssignments:s.siteAssignments||{}})),
   };
 }
 
@@ -1287,6 +1368,41 @@ async function buildConfigSpec(data){
             }));
     }
 
+    // ── Detect site-varying steps ──
+    const hasSiteVary = data.steps.some(s=>s.variesBySite&&s.riskClass==='Risk-Relevant');
+    const sites = (h.site||'').split(', ').filter(Boolean);
+
+    // ── Site Variation Table (only when at least one step varies by site) ──
+    let siteVarTable = null;
+    if(hasSiteVary){
+      const varyingSteps = data.steps.filter(s=>s.variesBySite&&s.riskClass==='Risk-Relevant');
+      // Cols: Site | one col per varying step
+      const siteColW = Math.floor((W_CS - 1400) / (varyingSteps.length || 1));
+      const svCols = [1400, ...varyingSteps.map(()=>siteColW)];
+      // Adjust last col to fill exactly
+      const diff = W_CS - svCols.reduce((a,b)=>a+b,0);
+      svCols[svCols.length-1] += diff;
+      siteVarTable = new Table({
+        width:{size:W_CS,type:WidthType.DXA},
+        columnWidths:svCols,
+        layout:TableLayoutType.FIXED,
+        rows:[
+          new TableRow({tableHeader:true,children:[
+            hc('Site',svCols[0]),
+            ...varyingSteps.map((s,i)=>hc('Step '+s.num+': '+s.name,svCols[i+1]))
+          ]}),
+          ...sites.map((site,si)=>new TableRow({children:[
+            dc(site,svCols[0],si%2===0?LGRAY:'F8F6FC',true),
+            ...varyingSteps.map((s,i)=>{
+              const sa=(s.siteAssignments&&s.siteAssignments[site])||{};
+              const assignText=(sa.assignedTo||'[Not specified]')+(sa.reassignAuth&&sa.reassignAuth!=='None'?' (Reassign: '+sa.reassignAuth+')':'');
+              return dc(assignText,svCols[i+1],si%2===0?'FFFFFF':LGRAY);
+            })
+          ]}))
+        ]
+      });
+    }
+
     // ── Section 3: Step Inventory table — ALL steps ──
     const INV=[500,2200,1600,1200,4665];
     const inventoryTable=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:INV,layout:TableLayoutType.FIXED,rows:[
@@ -1308,46 +1424,63 @@ async function buildConfigSpec(data){
     // ── Section 4: Risk-Relevant detail blocks ──
     const rrSteps=data.steps.filter(s=>s.riskClass==='Risk-Relevant');
     const SW=[1800,8365];
-    const detailBlocks=rrSteps.flatMap((s,i)=>[
+    const detailBlocks=rrSteps.flatMap((s,i)=>{
+      // Build assigned-to rows — site table or single value
+      const assignRows = s.variesBySite && sites.length
+        ? [new TableRow({children:[
+            dc('Assigned To:',SW[0],LGRAY,true),
+            new TableCell({width:{size:SW[1],type:WidthType.DXA},shading:{fill:'FFFFFF',type:ShadingType.CLEAR},borders:allThin,margins:cm(),
+              children:[
+                p(a('Varies by site — see Section 2 Site Variation Table.',{size:18,italic:true}),{after:0})
+              ]})
+          ]})]
+        : [new TableRow({children:[dc('Assigned To:',SW[0],LGRAY,true),dc(s.assignedTo||'',SW[1])]}),
+           new TableRow({children:[dc('Reassign Authority:',SW[0],'F8F6FC',true),dc(s.reassignAuth||'',SW[1],LGRAY)]})];
+
+      return [
       new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:SW,layout:TableLayoutType.FIXED,rows:[
-        // Step header — HDR_FILL spanning full width
         new TableRow({children:[new TableCell({
           width:{size:W_CS,type:WidthType.DXA},columnSpan:2,
           shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
           children:[p(a('Step '+s.num+':   '+s.name+(s.stepType?' ('+s.stepType+')':''),{bold:true,size:18}),{after:0})]
         })]}),
-        ...[
-          ['Branch / Scope:',s.branch||'All paths'],
-          ['Assigned To:',s.assignedTo||''],
-          ['Reassign Authority:',s.reassignAuth||''],
-          ['E-Signature:',s.eSig||'Yes'],
-          ['GxP Rationale:',s.ratResolved||''],
-          ['IUV Reference:',s.iuvRef||''],
-        ].map(([label,val],j)=>new TableRow({children:[
-          dc(label,SW[0],j%2===0?LGRAY:'F8F6FC',true),
-          dc(val,SW[1],j%2===0?'FFFFFF':LGRAY),
-        ]}))
+        new TableRow({children:[dc('Branch / Scope:',SW[0],LGRAY,true),dc(s.branch||'All paths',SW[1])]}),
+        ...assignRows,
+        new TableRow({children:[dc('E-Signature:',SW[0],s.variesBySite?LGRAY:'F8F6FC',true),dc(s.eSig||'Yes',SW[1],s.variesBySite?'FFFFFF':LGRAY)]}),
+        new TableRow({children:[dc('GxP Rationale:',SW[0],s.variesBySite?'F8F6FC':LGRAY,true),dc(s.ratResolved||'',SW[1],s.variesBySite?LGRAY:'FFFFFF')]}),
+        new TableRow({children:[dc('IUV Reference:',SW[0],s.variesBySite?LGRAY:'F8F6FC',true),dc(s.iuvRef||'',SW[1],s.variesBySite?'FFFFFF':LGRAY)]}),
       ]})
-    ,blank()]);
+    ,blank()];});
 
     // ── Section 5: Administrative scope statement ──
     const adminSteps=data.steps.filter(s=>s.riskClass!=='Risk-Relevant');
+
+    const siteVarSectionNum = hasSiteVary ? 3 : null;
+    const inventorySectionNum = hasSiteVary ? 4 : 3;
+    const rrConfigSectionNum = hasSiteVary ? 5 : 4;
+    const adminSectionNum = hasSiteVary ? (rrSteps.length>0?6:5) : (rrSteps.length>0?5:4);
 
     configSection=[
       secHdr('2.  WORKFLOW MAP'),
       ...imgChildren,
       blank(),
-      secHdr('3.  STEP INVENTORY AND CLASSIFICATION'),
+      ...(hasSiteVary?[
+        secHdr('3.  SITE VARIATION TABLE'),
+        p(a('The following table documents the per-site role assignments for steps whose assignments vary by site. All other configuration settings are uniform across sites.'),{after:80}),
+        siteVarTable,
+        blank(),
+      ]:[]),
+      secHdr(inventorySectionNum+'.  STEP INVENTORY AND CLASSIFICATION'),
       p(a('The table below lists every step in this workflow. Each step has been evaluated and classified as Risk-Relevant or Administrative. This table constitutes the complete classification record for this workflow.'),{after:80}),
       p([a('Total steps: ',{bold:true,size:18}),a(String(data.steps.length)+'.   Risk-Relevant: ',{size:18}),a(String(rrSteps.length)+'.   Administrative: ',{size:18}),a(String(adminSteps.length)+'.',{size:18})],{after:80}),
       inventoryTable,
       blank(),
       ...(rrSteps.length>0?[
-        secHdr('4.  RISK-RELEVANT STEP CONFIGURATION'),
+        secHdr(rrConfigSectionNum+'.  RISK-RELEVANT STEP CONFIGURATION'),
         p(a('The following detail blocks document the GxP-critical configuration settings for each Risk-Relevant step. Administrative steps are not included in this section.'),{after:80}),
         ...detailBlocks,
       ]:[]),
-      secHdr((rrSteps.length>0?'5':'4')+'.  ADMINISTRATIVE SCOPE STATEMENT'),
+      secHdr(adminSectionNum+'.  ADMINISTRATIVE SCOPE STATEMENT'),
       p(a(data.adminScopeStatement||('The following steps are classified as Administrative and excluded from IUV scope: '+adminSteps.map(s=>s.name||'Step '+s.num).join(', ')+'. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity.')),{after:0}),
       blank(),
     ];
@@ -1473,7 +1606,8 @@ async function buildConfigSpec(data){
     ];
   }
 
-  const sectionCount=isWF?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5):data.docType==='aqem'?(data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):3;
+  const hasSiteVaryGlobal=isWF&&data.steps.some(s=>s.variesBySite&&s.riskClass==='Risk-Relevant');
+  const sectionCount=isWF?(hasSiteVaryGlobal?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5)):data.docType==='aqem'?(data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):3;
   const changeHist=makeChangeHist(h,changeNote,W_CS);
 
   const doc=new Document({sections:[{
@@ -1849,6 +1983,9 @@ function resetCounter(prefix) {
 
 // Hook into module select change to update suggestion
 document.addEventListener('DOMContentLoaded', () => {
+  // Refresh site sub-tables whenever site selection changes
+  const siteEl = document.getElementById('site');
+  if(siteEl) siteEl.addEventListener('change', refreshAllSiteTables);
   const modSelect = document.getElementById('module');
   if (modSelect) {
     modSelect.addEventListener('change', () => {
