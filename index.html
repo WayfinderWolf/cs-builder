@@ -284,13 +284,14 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
       <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
-        <select id="site" multiple size="9" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple">
+        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple">
           <option value="Corporate">Corporate</option>
           <option value="PG Manufacturing">PG Manufacturing</option>
           <option value="LFC">LFC</option>
           <option value="Brazil">Brazil</option>
           <option value="Ireland">Ireland</option>
-          <option value="China">China</option>
+          <option value ="Eurpoe">Europe</option>
+          <option value ="China">China</option>
           <option value="Japan">Japan</option>
           <option value="Israel">Israel</option>
           <option value="Esseterre">Esseterre</option>
@@ -386,7 +387,7 @@ textarea{resize:vertical;min-height:68px;}
 
   <!-- Panel B: Step Inventory -->
   <div class="panel active" id="wfPanelB">
-    <div class="ph"><div class="pnum">4b</div><div><div class="ptitle">Step Inventory &amp; Classification</div><div class="pdesc">Add every step in the workflow — both Risk-Relevant and Administrative. This is the complete classification record.</div></div></div>
+    <div class="ph"><div class="pnum">4c</div><div><div class="ptitle">Step Inventory &amp; Classification</div><div class="pdesc">Add every step in the workflow — both Risk-Relevant and Administrative. This is the complete classification record.</div></div></div>
     <div class="pb">
       <div class="notice ni" style="margin-bottom:14px">Include all steps, even Notification and Administrative ones. The classification decision for every step must be documented.</div>
       <div id="stepsContainer" class="cards"></div>
@@ -396,7 +397,7 @@ textarea{resize:vertical;min-height:68px;}
 
   <!-- Panel C: Administrative Scope Statement -->
   <div class="panel active" id="wfPanelC">
-    <div class="ph"><div class="pnum">4c</div><div><div class="ptitle">Administrative Scope Statement</div><div class="pdesc">A single statement covering all Administrative steps and explicitly scoping them out of IUV</div></div></div>
+    <div class="ph"><div class="pnum">4d</div><div><div class="ptitle">Administrative Scope Statement</div><div class="pdesc">A single statement covering all Administrative steps and explicitly scoping them out of IUV</div></div></div>
     <div class="pb">
       <div class="field-group cols-1">
         <div class="field">
@@ -433,9 +434,112 @@ textarea{resize:vertical;min-height:68px;}
     </div>
   </div>
 
-  <!-- Panel B: VoD Evidence Summary -->
+  <!-- Panel B: Workflow-Level Configuration Settings -->
   <div class="panel active" id="aqemPanelB">
-    <div class="ph"><div class="pnum">4b</div><div><div class="ptitle">VoD Evidence Summary</div><div class="pdesc">Document the Validation on Demand report(s) used as primary IUV evidence for this workflow</div></div></div>
+    <div class="ph"><div class="pnum">4b</div><div><div class="ptitle">Workflow-Level Configuration Settings</div><div class="psub">General identification, launch restrictions, duration, and initiation permissions</div></div></div>
+    <div class="pb">
+
+      <!-- Workflow Identification -->
+      <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Workflow Identification</div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Workflow Type</label>
+          <select id="aqemWfType">
+            <option value="">— Select —</option>
+            <option>Corrective and Preventive Action</option>
+            <option>Deviation</option>
+            <option>Event Report</option>
+            <option>Issue Review</option>
+            <option>Management of Change</option>
+            <option>Nonconformance</option>
+            <option>Other</option>
+            <option>Out of Specification</option>
+          </select></div>
+        <div class="field"><label class="lbl">Prefix</label>
+          <input type="text" id="aqemWfPrefix" placeholder="e.g. DEV, NC, CAPA" oninput="updateAqemNumPreview()"></div>
+        <div class="field"><label class="lbl">Start Numbering</label>
+          <input type="text" id="aqemWfStartNum" placeholder="e.g. 1 or 1000" oninput="updateAqemNumPreview()"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px"><label class="lbl">Numbering Preview</label>
+        <div style="font-size:13px;padding:6px 10px;background:var(--surface-2);border-radius:var(--r);color:var(--ink-soft);font-family:monospace" id="aqemNumPreview">Prefix-YYYY-StartNum</div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border-soft);margin:14px 0">
+
+      <!-- Event Launch Restrictions -->
+      <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Event Launch Restrictions</div>
+      <div class="fg">
+        <div class="field"><label class="lbl">Restrict Launching of New Events By Workflow</label>
+          <select id="aqemLaunchRestrict" onchange="toggleAqemLaunchDetail(this.value)">
+            <option value="all">All Workflows (default — no restriction)</option>
+            <option value="selected">Selected published workflow(s) only</option>
+          </select></div>
+        <div class="field" id="aqemLaunchDetailRow" style="display:none"><label class="lbl">Permitted Launch Workflows</label>
+          <input type="text" id="aqemLaunchWorkflows" placeholder="e.g. Deviation, Nonconformance"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px"><label class="lbl">Event Creation Mode</label>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer">
+            <input type="radio" name="aqemEventCreation" value="anytime" id="aqemCreationAnytime" style="margin-top:2px;width:auto">
+            Events from this workflow can be created at any time
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer">
+            <input type="radio" name="aqemEventCreation" value="launched_only" id="aqemCreationLaunched" style="margin-top:2px;width:auto">
+            Events from this workflow can only be launched from existing events
+          </label>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border-soft);margin:14px 0">
+
+      <!-- Duration -->
+      <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Duration</div>
+      <div class="fg fg3">
+        <div class="field"><label class="lbl">Expected Total Duration</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="aqemTotalDuration" placeholder="e.g. 30" style="flex:1;min-width:0">
+            <select id="aqemTotalDurationUnit" style="width:90px">
+              <option value="Days">Days</option>
+              <option value="Hours">Hours</option>
+            </select>
+          </div></div>
+        <div class="field"><label class="lbl">Restrict to Business Days</label>
+          <div style="margin-top:6px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="aqemBusinessDays" style="width:auto">
+              Business days only
+            </label>
+          </div></div>
+        <div class="field"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border-soft);margin:14px 0">
+
+      <!-- Initiation Permissions -->
+      <div style="font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Initiation Permissions</div>
+      <div class="fg">
+        <div class="field"><label class="lbl">Sites Permitted to Initiate Events</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px" id="aqemPermSites">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Corporate" style="width:auto"> Corporate</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="PG Manufacturing" style="width:auto"> PG Manufacturing</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="LFC" style="width:auto"> LFC</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil-São Paulo" style="width:auto"> Brazil-São Paulo</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil-Joinville" style="width:auto"> Brazil-Joinville</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Ireland" style="width:auto"> Ireland</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="China" style="width:auto"> China</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Japan" style="width:auto"> Japan</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="EU" style="width:auto"> EU</label>
+          </div></div>
+        <div class="field"><label class="lbl">Event Owner Eligibility</label>
+          <textarea id="aqemEventOwner" rows="3" placeholder="e.g. Site: All Sites; User Group: QA Approvers, QA Managers&#10;Describe the conditional rules for who can become event owner"></textarea></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Panel C: VoD Evidence Summary -->
+  <div class="panel active" id="aqemPanelC">
+    <div class="ph"><div class="pnum">4c</div><div><div class="ptitle">VoD Evidence Summary</div><div class="pdesc">Document the Validation on Demand report(s) used as primary IUV evidence for this workflow</div></div></div>
     <div class="pb">
       <div class="notice ni" style="margin-bottom:14px">VoD reports can serve as primary IUV evidence for steps they cover. Document the report reference here. Manual IUV steps will reference this report where applicable.</div>
       <div class="fg fg3">
@@ -456,8 +560,8 @@ textarea{resize:vertical;min-height:68px;}
   </div>
 
   <!-- Panel C: AQEM Step Inventory -->
-  <div class="panel active" id="aqemPanelC">
-    <div class="ph"><div class="pnum">4c</div><div><div class="ptitle">Step Inventory &amp; Classification</div><div class="pdesc">Add every step. Risk-Relevant steps get full detail fields including conditional logic, VoD coverage, and data mapping.</div></div></div>
+  <div class="panel active" id="aqemPanelD">
+    <div class="ph"><div class="pnum">4d</div><div><div class="ptitle">Step Inventory &amp; Classification</div><div class="pdesc">Add every step. Risk-Relevant steps get full detail fields including conditional logic, VoD coverage, and data mapping.</div></div></div>
     <div class="pb">
       <div class="notice ni" style="margin-bottom:14px">Include all steps — approvals, collaborations, notifications, and escalation paths. Classify each as Risk-Relevant or Administrative.</div>
       <div id="aqemStepsContainer" class="cards"></div>
@@ -466,8 +570,8 @@ textarea{resize:vertical;min-height:68px;}
   </div>
 
   <!-- Panel D: Administrative Scope Statement -->
-  <div class="panel active" id="aqemPanelD">
-    <div class="ph"><div class="pnum">4d</div><div><div class="ptitle">Administrative Scope Statement</div><div class="pdesc">Statement covering all Administrative steps excluded from IUV scope</div></div></div>
+  <div class="panel active" id="aqemPanelE">
+    <div class="ph"><div class="pnum">4e</div><div><div class="ptitle">Administrative Scope Statement</div><div class="pdesc">Statement covering all Administrative steps excluded from IUV scope</div></div></div>
     <div class="pb">
       <div class="field">
         <label class="lbl">Administrative Steps Scope Statement</label>
@@ -1109,6 +1213,30 @@ function clearAqemImage() {
   document.getElementById('aqemImagePlaceholder').style.display = 'block';
 }
 
+function toggleAqemLaunchDetail(val) {
+  const row = document.getElementById('aqemLaunchDetailRow');
+  if (row) row.style.display = val === 'selected' ? 'grid' : 'none';
+}
+
+function updateAqemNumPreview() {
+  const prefix = document.getElementById('aqemWfPrefix')?.value || 'PREFIX';
+  const start = document.getElementById('aqemWfStartNum')?.value || '001';
+  const el = document.getElementById('aqemNumPreview');
+  if (el) el.textContent = prefix + '-YYYY-' + start;
+}
+
+function toggleAqemLaunchDetail(val) {
+  const row = document.getElementById('aqemLaunchDetailRow');
+  if (row) row.style.display = val === 'selected' ? 'grid' : 'none';
+}
+
+function updateAqemNumPreview() {
+  const prefix = document.getElementById('aqemWfPrefix')?.value || 'PREFIX';
+  const start = document.getElementById('aqemWfStartNum')?.value || '001';
+  const el = document.getElementById('aqemNumPreview');
+  if (el) el.textContent = prefix + '-YYYY-' + start;
+}
+
 function addAqemStep(data) {
   const id = ++astc;
   const s = data || {
@@ -1116,7 +1244,8 @@ function addAqemStep(data) {
     assignedTo: '', eSig: 'Yes', ratPreset: '', ratCustom: '',
     condRouting: '', condDisplay: '',
     vodCoverage: 'Manual IUV', vodCustom: '',
-    scopingNote: '', requiredFields: '', dataMapping: '', iuvRef: ''
+    scopingNote: '', requiredFields: '', dataMapping: '', iuvRef: '',
+    stepDuration: '', stepDurationUnit: 'Days'
   };
   if (!data) s.id = id;
   aqemSteps.push(s);
@@ -1149,11 +1278,7 @@ function renderAqemStep(s) {
       <div class="fg fg3">
         <div class="field"><label class="lbl">Step Name <span class="req">*</span></label>
           <input type="text" value="${s.name}" placeholder="e.g. Investigation" oninput="updA(${s.id},'name',this.value);updAPrev(${s.id})"></div>
-        <div class="field"><label class="lbl">Step Type</label>
-          <select onchange="updA(${s.id},'stepType',this.value)">
-            <option value="">— Select —</option>
-            ${['Change Request Approval','Collaboration','Intermediate Approval','Final Approval','Notification','Escalation'].map(t=>`<option value="${t}"${s.stepType===t?' selected':''}>${t}</option>`).join('')}
-          </select></div>
+
         <div class="field"><label class="lbl">Risk Classification</label>
           <select onchange="updA(${s.id},'riskClass',this.value);rerenderAqemRcBadge(${s.id});toggleAqemDetails(${s.id})">
             <option value="Risk-Relevant"${isRR?' selected':''}>Risk-Relevant</option>
@@ -1356,6 +1481,17 @@ function collectData(){
     vodMcVersion: (document.getElementById('vodMcVersion')||{}).value||'',
     vodScope: (document.getElementById('vodScope')||{}).value||'',
     vodGaps: (document.getElementById('vodGaps')||{}).value||'',
+    aqemWfType: (document.getElementById('aqemWfType')||{}).value||'',
+    aqemWfPrefix: (document.getElementById('aqemWfPrefix')||{}).value||'',
+    aqemWfStartNum: (document.getElementById('aqemWfStartNum')||{}).value||'',
+    aqemLaunchRestrict: (document.getElementById('aqemLaunchRestrict')||{}).value||'all',
+    aqemLaunchWorkflows: (document.getElementById('aqemLaunchWorkflows')||{}).value||'',
+    aqemEventCreation: (document.querySelector('input[name="aqemEventCreation"]:checked')||{}).value||'anytime',
+    aqemTotalDuration: (document.getElementById('aqemTotalDuration')||{}).value||'',
+    aqemTotalDurationUnit: (document.getElementById('aqemTotalDurationUnit')||{}).value||'Days',
+    aqemBusinessDays: document.getElementById('aqemBusinessDays')?.checked||false,
+    aqemPermSites: [...(document.querySelectorAll('input[name="aqemPermSite"]:checked')||[])].map(x=>x.value).join(', '),
+    aqemEventOwner: (document.getElementById('aqemEventOwner')||{}).value||'',
     header:{
       docNum:document.getElementById('docNum').value,
       revision:document.getElementById('revision').value,
@@ -1662,6 +1798,78 @@ async function buildConfigSpec(data){
       imgChildren.push(new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:[W_CS],layout:TableLayoutType.FIXED,rows:[new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},shading:{fill:'FFF2CC',type:ShadingType.CLEAR},borders:allThin,margins:{top:100,bottom:100,left:140,right:140},children:[p(a('[AQEM workflow image — export from MasterControl and insert here]',{size:18,italic:true}),{after:0})]})]})]}));
     }
 
+    // ── Workflow-Level Configuration Settings table ───────────────────────────
+    const WCS=[2800,3680,900,900,1080]; // Setting | Value | Risk Class | IUV | Notes
+    const wcsTotal=WCS.reduce((a,b)=>a+b,0);
+    const launchVal = data.aqemLaunchRestrict==='selected'
+      ? 'Restricted — events can only be launched from: '+(data.aqemLaunchWorkflows||'[specify workflows]')
+      : 'All Workflows — no launch restriction configured';
+    const creationVal = data.aqemEventCreation==='launched_only'
+      ? 'Events can only be launched from existing events'
+      : 'Events can be created at any time';
+    const durationVal = data.aqemTotalDuration
+      ? data.aqemTotalDuration+' '+data.aqemTotalDurationUnit+(data.aqemBusinessDays?' (business days)':' (calendar days)')
+      : '[Not configured]';
+    const stepDurations = data.aqemSteps.filter(s=>s.stepDuration).map(s=>'Step '+s.num+' ('+s.name+'): '+s.stepDuration+' '+s.stepDurationUnit).join('; ');
+    const fullDurationVal = durationVal+(stepDurations?' — Per step: '+stepDurations:'');
+    const permSitesVal = data.aqemPermSites||'[Not specified]';
+    const ownerVal = data.aqemEventOwner||'[Not specified]';
+    const prefixVal = data.aqemWfPrefix&&data.aqemWfStartNum
+      ? data.aqemWfPrefix+'-YYYY-'+data.aqemWfStartNum
+      : data.aqemWfPrefix||'[Not specified]';
+
+    const wcsRows = [
+      // Header
+      new TableRow({tableHeader:true,children:[
+        hc('Setting',WCS[0]),hc('Configured Value',WCS[1]),
+        hc('Risk Class.',WCS[2]),hc('IUV Req.',WCS[3]),hc('Notes',WCS[4])
+      ]}),
+      // Workflow Identification — Administrative
+      new TableRow({children:[
+        dc('Workflow Identification (Type, Name, Prefix, Numbering)',WCS[0],LGRAY,true),
+        dc((data.aqemWfType||'[Not specified]')+' — Prefix: '+prefixVal,WCS[1]),
+        dc('Admin.',WCS[2],LGRAY),dc('No',WCS[3],LGRAY),
+        dc('Identifiers and categorization only. No GxP routing impact.',WCS[4]),
+      ]}),
+      // Event Launch Restrictions — Risk-Relevant
+      new TableRow({children:[
+        dc('Event Launch Restrictions',WCS[0],'F8F6FC',true),
+        dc(launchVal,WCS[1],'F8F6FC'),
+        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
+        dc('Controls which workflows can spawn child events. Enforces CAPA program integrity.',WCS[4],'F8F6FC'),
+      ]}),
+      // Event Creation Mode — Risk-Relevant
+      new TableRow({children:[
+        dc('Event Creation Mode',WCS[0],LGRAY,true),
+        dc(creationVal,WCS[1]),
+        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
+        dc('Determines whether standalone event initiation is permitted or events must be linked to a parent.',WCS[4]),
+      ]}),
+      // Duration — Risk-Relevant
+      new TableRow({children:[
+        dc('Workflow Duration and Step Timeframes',WCS[0],'F8F6FC',true),
+        dc(fullDurationVal,WCS[1],'F8F6FC'),
+        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
+        dc('Due date controls driving overdue notifications and escalations. Documents GxP commitments for event resolution.',WCS[4],'F8F6FC'),
+      ]}),
+      // Permitted Sites — Risk-Relevant
+      new TableRow({children:[
+        dc('Sites Permitted to Initiate Events',WCS[0],LGRAY,true),
+        dc(permSitesVal,WCS[1]),
+        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
+        dc('Site scoping control. Restricts event initiation to authorized sites.',WCS[4]),
+      ]}),
+      // Event Owner Eligibility — Risk-Relevant
+      new TableRow({children:[
+        dc('Event Owner Eligibility',WCS[0],'F8F6FC',true),
+        dc(ownerVal,WCS[1],'F8F6FC'),
+        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
+        dc('Defines who can assume event ownership. Access control with GxP oversight implications.',WCS[4],'F8F6FC'),
+      ]}),
+    ];
+    const wcsTable=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:WCS,layout:TableLayoutType.FIXED,rows:wcsRows});
+
+
     // VoD Summary box
     const vodBox=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:[2200,7965],layout:TableLayoutType.FIXED,rows:[
       new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('VoD Evidence Summary',{bold:true,size:18}),{after:0})]})]})
@@ -1675,9 +1883,9 @@ async function buildConfigSpec(data){
     ]});
 
     // Step inventory — all steps
-    const AINV=[500,2200,1600,1200,4665];
+    const AINV=[500,3800,1200,4665];
     const aqemInventory=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:AINV,layout:TableLayoutType.FIXED,rows:[
-      new TableRow({tableHeader:true,children:[hc('#',AINV[0]),hc('Step Name',AINV[1]),hc('Step Type',AINV[2]),hc('Risk Class.',AINV[3]),hc('Classification Rationale / VoD Coverage',AINV[4])]}),
+      new TableRow({tableHeader:true,children:[hc('#',AINV[0]),hc('Step Name',AINV[1]),hc('Risk Class.',AINV[2]),hc('Classification Rationale / VoD Coverage',AINV[3])]}),
       ...data.aqemSteps.map((s,i)=>{
         const rr=s.riskClass==='Risk-Relevant';
         const rowFill=i%2===0?'FFFFFF':LGRAY;
@@ -1720,17 +1928,20 @@ async function buildConfigSpec(data){
 
     const adminAqemSteps=data.aqemSteps.filter(s=>s.riskClass!=='Risk-Relevant');
     configSection=[
-      secHdr('2.  AQEM WORKFLOW MAP'),
+      secHdr('2.  WORKFLOW-LEVEL CONFIGURATION SETTINGS'),
+      p(a('The following table documents the workflow-level configuration settings for this AQEM workflow, including event identification, launch restrictions, duration controls, and initiation permissions.'),{after:80}),
+      wcsTable,blank(),
+      secHdr('3.  AQEM WORKFLOW MAP'),
       ...imgChildren,blank(),
-      secHdr('3.  VoD EVIDENCE SUMMARY'),
+      secHdr('4.  VoD EVIDENCE SUMMARY'),
       p(a('The following table documents the Validation on Demand (VoD) report used as primary IUV evidence for this workflow. Steps marked "VoD Only" or "VoD + Spot Check" in the inventory below are covered by this report.'),{after:80}),
       vodBox,blank(),
-      secHdr('4.  STEP INVENTORY AND CLASSIFICATION'),
+      secHdr('5.  STEP INVENTORY AND CLASSIFICATION'),
       p(a('The table below lists every step in this AQEM workflow. Each step has been classified as Risk-Relevant or Administrative. VoD coverage designation is noted for Risk-Relevant steps.'),{after:80}),
       p([a('Total steps: ',{bold:true,size:18}),a(String(data.aqemSteps.length)+'.   Risk-Relevant: ',{size:18}),a(String(rrAqemSteps.length)+'.   Administrative: ',{size:18}),a(String(adminAqemSteps.length)+'.',{size:18})],{after:80}),
       aqemInventory,blank(),
       ...(rrAqemSteps.length>0?[
-        secHdr('5.  RISK-RELEVANT STEP CONFIGURATION'),
+        secHdr('6.  RISK-RELEVANT STEP CONFIGURATION'),
         p(a('The following detail blocks document the GxP-critical configuration for each Risk-Relevant step, including conditional logic, required fields, user group scoping, and data mapping for linked events.'),{after:80}),
         ...aqemDetailBlocks,
       ]:[]),
