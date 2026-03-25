@@ -283,8 +283,7 @@ textarea{resize:vertical;min-height:68px;}
           <option>Audit</option>
           <option>Risk</option>
           <option>Production Records</option>
-          <option>System / Security</option>
-        </select>
+          <option>System / Security</option></select>
       </div>
     </div>
     <div id="aqemModuleLabel" style="display:none;padding:6px 0 10px 0">
@@ -307,7 +306,8 @@ textarea{resize:vertical;min-height:68px;}
           <option value="Israel">Israel</option>
           <option value="Esseterre">Esseterre</option>
           <option value="All Sites">All Sites</option>
-        </select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
+        </select>
+        <div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -540,7 +540,8 @@ textarea{resize:vertical;min-height:68px;}
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="EU" style="width:auto"> EU</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Israel" style="width:auto"> Israel</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Esseterre" style="width:auto"> Esseterre</label>
-          </div></div>
+          </div>
+        </div>
         <div class="field"><label class="lbl">Event Owner Eligibility</label>
           <textarea id="aqemEventOwner" rows="3" placeholder="e.g. Site: All Sites; User Group: QA Approvers, QA Managers&#10;Describe the conditional rules for who can become event owner"></textarea></div>
       </div>
@@ -2017,10 +2018,33 @@ async function buildIUVPackage(data){
   const isWF=data.docType==='workflow';
   const iuvDocNum=h.iuvPackage||('IUV-'+h.docNum.replace('SCS-',''));
   const csRef=h.docNum;
-  const changeNote='Initial release – '+csRef;
+  const SW=[1400,8855];
+
+
+  const iuvChangeNote='Initial release – '+csRef;
+  const changeHist=makeChangeHist(h,iuvChangeNote,W_IUV);
 
 
   // AQEM IUV items — manual-only steps (not VoD Only)
+  const PCW=[600,7360,2295];
+  const preCheckItems=[
+    "Configuration Specification ("+csRef+") is approved and effective prior to IUV execution.",
+    "IUV is being executed in the ___________ environment (specify: Production/Dev/Test).",
+    "MasterControl system version confirmed: ____________.",
+    "Test accounts with required roles are available and confirmed.",
+    "Executor has reviewed the Configuration Specification and understands all test steps prior to execution.",
+  ];
+  const preCheckTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:PCW,layout:TableLayoutType.FIXED,rows:[
+    new TableRow({tableHeader:true,children:[hc("#",PCW[0]),hc("Pre-Execution Condition",PCW[1]),hc("Confirmed",PCW[2])]}),
+    ...preCheckItems.map((item,i)=>new TableRow({children:[
+      dc(String(i+1)+".",PCW[0],LGRAY,true),
+      dc(item,PCW[1],i%2===0?"FFFFFF":LGRAY),
+      new TableCell({width:{size:PCW[2],type:WidthType.DXA},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,
+        children:[p(a("☐ Yes   ☐ No",{size:18}),{align:AlignmentType.CENTER,after:0})]}),
+    ]}))
+  ]});
+
+
   if(data.docType==='aqem'){
     const aqemManualItems=data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant'&&s.vodCoverage!=='VoD Only');
     const aqemVodItems=data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant'&&s.vodCoverage==='VoD Only');
@@ -2059,6 +2083,19 @@ async function buildIUVPackage(data){
       ]});
     }
 
+    const AQSSUM=[2400,7855];
+    const aqemSummaryTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:AQSSUM,layout:TableLayoutType.FIXED,rows:[
+      new TableRow({children:[new TableCell({width:{size:W_IUV,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('IUV Summary',{bold:true,size:18}),{after:0})]})]}),
+      ...[
+        ['Total IUV Steps',String(aqemManualItems.length)],
+        ['Steps Passed','[  ]'],['Steps Failed','[  ]'],['Steps N/A','[  ]'],
+        ['Discrepancies Opened','[  ]  — Deviation reference(s): _______________'],
+        ['IUV Execution Date(s)','[MM/DD/YY – MM/DD/YY]'],
+        ['Release Decision','☐ Released — confirmed as validated     ☐ Not Released — see discrepancy log'],
+        ['QA Reviewer','_______________________________'],
+        ['Reviewer Signature Date','_______________'],
+      ].map(([l,v])=>new TableRow({children:[dc(l,AQSSUM[0],LGRAY,true),dc(v,AQSSUM[1])]})),
+    ]});
     const aqemDoc=new Document({sections:[{
       properties:{page:{size:{width:12240,height:15840},margin:{top:1008,right:1008,bottom:1008,left:1008}}},
       children:[
@@ -2075,7 +2112,7 @@ async function buildIUVPackage(data){
         ...aqemManualItems.flatMap((s,i)=>[aqemIuvStepBlock(s,i),blank()]),
         ...(aqemManualItems.length===0?[p(a('All Risk-Relevant steps are covered by VoD Only. No manual IUV steps are required beyond the VoD report referenced in Section 2.'),{after:0}),blank()]:[]),
         secHdr('5.   IUV SUMMARY AND RELEASE DECISION'),
-        summaryTable,blank(),
+        aqemSummaryTable,blank(),
         secHdr('6.   CHANGE HISTORY'),
         changeHist,blank(),
         p(a('END OF DOCUMENT',{bold:true}),{align:AlignmentType.CENTER,before:200,after:0}),
@@ -2091,23 +2128,6 @@ async function buildIUVPackage(data){
   }
 
   // Pre-execution checklist — template cols: 600, 7360, 2295
-  const PCW=[600,7360,2295];
-  const preCheckItems=[
-    "Configuration Specification ("+csRef+") is approved and effective prior to IUV execution.",
-    "IUV is being executed in the ___________ environment (specify: Production/Dev/Test).",
-    "MasterControl system version confirmed: ____________.",
-    "Test accounts with required roles are available and confirmed.",
-    "Executor has reviewed the Configuration Specification and understands all test steps prior to execution.",
-  ];
-  const preCheckTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:PCW,layout:TableLayoutType.FIXED,rows:[
-    new TableRow({tableHeader:true,children:[hc("#",PCW[0]),hc("Pre-Execution Condition",PCW[1]),hc("Confirmed",PCW[2])]}),
-    ...preCheckItems.map((item,i)=>new TableRow({children:[
-      dc(String(i+1)+".",PCW[0],LGRAY,true),
-      dc(item,PCW[1],i%2===0?"FFFFFF":LGRAY),
-      new TableCell({width:{size:PCW[2],type:WidthType.DXA},borders:allThin,margins:cm(),verticalAlign:VerticalAlign.CENTER,
-        children:[p(a("☐ Yes   ☐ No",{size:18}),{align:AlignmentType.CENTER,after:0})]}),
-    ]}))
-  ]});
 
   // IUV test steps — auto-generated from risk-relevant items
   // Template: cols 1400, 8855. Step header spans full width with E5DFEC fill (not purple).
@@ -2116,7 +2136,26 @@ async function buildIUVPackage(data){
     ? data.steps.map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||""}))
     : data.settings.filter(s=>s.riskClass==='Risk-Relevant').map(s=>({ref:String(s.num),name:s.name,csRef,rationale:s.ratResolved||'',testAction:s.testAction||'',expectedResult:s.expectedResult||'',evidence:resolveEvidence(s),conclusion:resolveConclusion(s)}));
 
-  const SW=[1400,8855];
+  const SSUM=[2400,7855];
+  const summaryTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SSUM,layout:TableLayoutType.FIXED,rows:[
+    ...([
+      ["Total IUV Steps",String(iuvItems.length)],
+      ["Steps Passed","[  ]"],
+      ["Steps Failed","[  ]"],
+      ["Steps N/A","[  ]"],
+      ["Discrepancies Opened","[  ]  — Deviation reference(s): _______________"],
+      ["IUV Execution Date(s)","[MM/DD/YY – MM/DD/YY]"],
+    ]).map(([l,v])=>new TableRow({children:[dc(l,SSUM[0],LGRAY,true),dc(v,SSUM[1])]})),
+    // Release Decision — E5DFEC label cell (matches template)
+    new TableRow({children:[
+      dc("Release Decision",SSUM[0],HDR_FILL,true),
+      new TableCell({width:{size:SSUM[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[
+        p(a("[ ] APPROVED — All IUV steps passed. System validated for intended use as defined in "+csRef+".",{size:18}),{after:60}),
+        p(a("[ ] CONDITIONALLY APPROVED — Open discrepancies documented and risk-accepted. See deviation reference(s) above.",{size:18}),{after:60}),
+        p(a("[ ] NOT APPROVED — IUV failures require remediation before release. See deviation reference(s) above.",{size:18}),{after:0}),
+      ]}),
+    ]}),
+  ]});
   function iuvStepBlock(item,idx){
     const testActionText = item.testAction||'[Describe the specific action to take to verify this configuration is in place and functioning as intended]';
     const expectedText = item.expectedResult||'[Describe what must be observed for this step to pass]';
@@ -2145,28 +2184,8 @@ async function buildIUVPackage(data){
   }
 
   // IUV Summary table — template cols: 2400, 7855
-  const SSUM=[2400,7855];
-  const summaryTable=new Table({width:{size:W_IUV,type:WidthType.DXA},columnWidths:SSUM,layout:TableLayoutType.FIXED,rows:[
-    ...([
-      ["Total IUV Steps",String(iuvItems.length)],
-      ["Steps Passed","[  ]"],
-      ["Steps Failed","[  ]"],
-      ["Steps N/A","[  ]"],
-      ["Discrepancies Opened","[  ]  — Deviation reference(s): _______________"],
-      ["IUV Execution Date(s)","[MM/DD/YY – MM/DD/YY]"],
-    ]).map(([l,v])=>new TableRow({children:[dc(l,SSUM[0],LGRAY,true),dc(v,SSUM[1])]})),
-    // Release Decision — E5DFEC label cell (matches template)
-    new TableRow({children:[
-      dc("Release Decision",SSUM[0],HDR_FILL,true),
-      new TableCell({width:{size:SSUM[1],type:WidthType.DXA},borders:allThin,margins:cm(),children:[
-        p(a("[ ] APPROVED — All IUV steps passed. System validated for intended use as defined in "+csRef+".",{size:18}),{after:60}),
-        p(a("[ ] CONDITIONALLY APPROVED — Open discrepancies documented and risk-accepted. See deviation reference(s) above.",{size:18}),{after:60}),
-        p(a("[ ] NOT APPROVED — IUV failures require remediation before release. See deviation reference(s) above.",{size:18}),{after:0}),
-      ]}),
-    ]}),
-  ]});
 
-  const changeHist=makeChangeHist(h,changeNote,W_IUV);
+
 
   // IUV template structure:
   // 1. PURPOSE AND SCOPE → 2. PRE-EXECUTION CHECKLIST → 3. IUV TEST STEPS → 4. IUV SUMMARY → 5. CHANGE HISTORY
