@@ -274,7 +274,17 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg" id="moduleRow">
       <div class="field"><label class="lbl">System <span class="req">*</span></label><input type="text" id="system" value="MasterControl"></div>
       <div class="field"><label class="lbl">Module <span class="req">*</span></label>
-        <select id="module"><option value="">— Select —</option><option>Documents</option><option>Training</option><option>Process</option><option>AQEM</option><option>Supplier</option><option>Audit</option><option>Risk</option><option>Production Records</option><option>System / Security</option></select>
+        <select id="module"><option value="">— Select —</option>
+          <option>Documents</option>
+          <option>Training</option>
+          <option>Process</option>
+          <option>AQEM</option>
+          <option>Supplier</option>
+          <option>Audit</option>
+          <option>Risk</option>
+          <option>Production Records</option>
+          <option>System / Security</option>
+        </select>
       </div>
     </div>
     <div id="aqemModuleLabel" style="display:none;padding:6px 0 10px 0">
@@ -288,16 +298,16 @@ textarea{resize:vertical;min-height:68px;}
           <option value="Corporate">Corporate</option>
           <option value="PG Manufacturing">PG Manufacturing</option>
           <option value="LFC">LFC</option>
-          <option value="Brazil">Brazil</option>
+          <option value="Brazil-Sao Paulo">Brazil-Sao Paulo</option>
+          <option value="Brazil-Joinville">Brazil-Joinville</option>
           <option value="Ireland">Ireland</option>
-          <option value ="Eurpoe">Europe</option>
-          <option value ="China">China</option>
+          <option value="China">China</option>
           <option value="Japan">Japan</option>
+          <option value="UE">EU</option>
           <option value="Israel">Israel</option>
           <option value="Esseterre">Esseterre</option>
           <option value="All Sites">All Sites</option>
-        </select>
-        <div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
+        </select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -522,12 +532,14 @@ textarea{resize:vertical;min-height:68px;}
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Corporate" style="width:auto"> Corporate</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="PG Manufacturing" style="width:auto"> PG Manufacturing</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="LFC" style="width:auto"> LFC</label>
-            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil-São Paulo" style="width:auto"> Brazil-São Paulo</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil-Joinville" style="width:auto"> Brazil-Joinville</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil-Sao Paulo" style="width:auto"> Brazil-Sao Paulo</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Ireland" style="width:auto"> Ireland</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="China" style="width:auto"> China</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Japan" style="width:auto"> Japan</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="EU" style="width:auto"> EU</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Israel" style="width:auto"> Israel</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Esseterre" style="width:auto"> Esseterre</label>
           </div></div>
         <div class="field"><label class="lbl">Event Owner Eligibility</label>
           <textarea id="aqemEventOwner" rows="3" placeholder="e.g. Site: All Sites; User Group: QA Approvers, QA Managers&#10;Describe the conditional rules for who can become event owner"></textarea></div>
@@ -1821,53 +1833,53 @@ async function buildConfigSpec(data){
     const wcsRows = [
       // Header
       new TableRow({tableHeader:true,children:[
-        hc('Setting',WCS[0]),hc('Configured Value',WCS[1]),
-        hc('Risk Class.',WCS[2]),hc('IUV Req.',WCS[3]),hc('Notes',WCS[4])
+        hc('Setting',2800),hc('Configured Value',3680),
+        hc('Risk Class.',900),hc('IUV Req.',900),hc('Notes',1080)
       ]}),
       // Workflow Identification — Administrative
       new TableRow({children:[
-        dc('Workflow Identification (Type, Name, Prefix, Numbering)',WCS[0],LGRAY,true),
-        dc((data.aqemWfType||'[Not specified]')+' — Prefix: '+prefixVal,WCS[1]),
-        dc('Admin.',WCS[2],LGRAY),dc('No',WCS[3],LGRAY),
-        dc('Identifiers and categorization only. No GxP routing impact.',WCS[4]),
+        dc('Workflow Identification (Type, Name, Prefix, Numbering)',2800,LGRAY,true),
+        dc((data.aqemWfType||'[Not specified]')+' — Prefix: '+prefixVal,3680),
+        dc('Admin.',900,LGRAY),dc('No',900,LGRAY),
+        dc('Identifiers and categorization only. No GxP routing impact.',1080),
       ]}),
       // Event Launch Restrictions — Risk-Relevant
       new TableRow({children:[
-        dc('Event Launch Restrictions',WCS[0],'F8F6FC',true),
-        dc(launchVal,WCS[1],'F8F6FC'),
-        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
-        dc('Controls which workflows can spawn child events. Enforces CAPA program integrity.',WCS[4],'F8F6FC'),
+        dc('Event Launch Restrictions',2800,'F8F6FC',true),
+        dc(launchVal,3680,'F8F6FC'),
+        dc('Risk-Relevant',900,BGRAY,true),dc('Yes',900,BGRAY),
+        dc('Controls which workflows can spawn child events. Enforces CAPA program integrity.',1080,'F8F6FC'),
       ]}),
       // Event Creation Mode — Risk-Relevant
       new TableRow({children:[
-        dc('Event Creation Mode',WCS[0],LGRAY,true),
-        dc(creationVal,WCS[1]),
-        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
-        dc('Determines whether standalone event initiation is permitted or events must be linked to a parent.',WCS[4]),
+        dc('Event Creation Mode',2800,LGRAY,true),
+        dc(creationVal,3680),
+        dc('Risk-Relevant',900,BGRAY,true),dc('Yes',900,BGRAY),
+        dc('Determines whether standalone event initiation is permitted or events must be linked to a parent.',1080),
       ]}),
       // Duration — Risk-Relevant
       new TableRow({children:[
-        dc('Workflow Duration and Step Timeframes',WCS[0],'F8F6FC',true),
-        dc(fullDurationVal,WCS[1],'F8F6FC'),
-        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
-        dc('Due date controls driving overdue notifications and escalations. Documents GxP commitments for event resolution.',WCS[4],'F8F6FC'),
+        dc('Workflow Duration and Step Timeframes',2800,'F8F6FC',true),
+        dc(fullDurationVal,3680,'F8F6FC'),
+        dc('Risk-Relevant',900,BGRAY,true),dc('Yes',900,BGRAY),
+        dc('Due date controls driving overdue notifications and escalations. Documents GxP commitments for event resolution.',1080,'F8F6FC'),
       ]}),
       // Permitted Sites — Risk-Relevant
       new TableRow({children:[
-        dc('Sites Permitted to Initiate Events',WCS[0],LGRAY,true),
-        dc(permSitesVal,WCS[1]),
-        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
-        dc('Site scoping control. Restricts event initiation to authorized sites.',WCS[4]),
+        dc('Sites Permitted to Initiate Events',2800,LGRAY,true),
+        dc(permSitesVal,3680),
+        dc('Risk-Relevant',900,BGRAY,true),dc('Yes',900,BGRAY),
+        dc('Site scoping control. Restricts event initiation to authorized sites.',1080),
       ]}),
       // Event Owner Eligibility — Risk-Relevant
       new TableRow({children:[
-        dc('Event Owner Eligibility',WCS[0],'F8F6FC',true),
-        dc(ownerVal,WCS[1],'F8F6FC'),
-        dc('Risk-Relevant',WCS[2],BGRAY,true),dc('Yes',WCS[3],BGRAY),
-        dc('Defines who can assume event ownership. Access control with GxP oversight implications.',WCS[4],'F8F6FC'),
+        dc('Event Owner Eligibility',2800,'F8F6FC',true),
+        dc(ownerVal,3680,'F8F6FC'),
+        dc('Risk-Relevant',900,BGRAY,true),dc('Yes',900,BGRAY),
+        dc('Defines who can assume event ownership. Access control with GxP oversight implications.',1080,'F8F6FC'),
       ]}),
     ];
-    const wcsTable=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:WCS,layout:TableLayoutType.FIXED,rows:wcsRows});
+    const wcsTable=new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:[2800, 3680, 900, 900, 1080],layout:TableLayoutType.FIXED,rows:wcsRows});
 
 
     // VoD Summary box
@@ -1894,9 +1906,8 @@ async function buildConfigSpec(data){
         return new TableRow({children:[
           dc(String(s.num),AINV[0],LGRAY,true),
           dc(s.name,AINV[1],rowFill),
-          dc(s.stepType||'',AINV[2],rowFill),
-          dc(s.riskClass,AINV[3],rr?BGRAY:LGRAY,true),
-          dc(rationale+vodNote,AINV[4],rowFill),
+          dc(s.riskClass,AINV[2],rr?BGRAY:LGRAY,true),
+          dc(rationale+vodNote,AINV[3],rowFill),
         ]});
       })
     ]});
@@ -1945,7 +1956,7 @@ async function buildConfigSpec(data){
         p(a('The following detail blocks document the GxP-critical configuration for each Risk-Relevant step, including conditional logic, required fields, user group scoping, and data mapping for linked events.'),{after:80}),
         ...aqemDetailBlocks,
       ]:[]),
-      secHdr((rrAqemSteps.length>0?'6':'5')+'.  ADMINISTRATIVE SCOPE STATEMENT'),
+      secHdr((rrAqemSteps.length>0?'7':'6')+'.  ADMINISTRATIVE SCOPE STATEMENT'),
       p(a(data.adminScopeStatement||('The following steps are classified as Administrative and excluded from IUV scope: '+adminAqemSteps.map(s=>s.name||'Step '+s.num).join(', ')+'. These steps do not affect workflow routing, approval authority, e-signature enforcement, or record integrity.')),{after:0}),
       blank(),
     ];
@@ -1974,7 +1985,7 @@ async function buildConfigSpec(data){
   }
 
   const hasSiteVaryGlobal=isWF&&data.steps.some(s=>s.variesBySite&&s.riskClass==='Risk-Relevant');
-  const sectionCount=isWF?(hasSiteVaryGlobal?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5)):data.docType==='aqem'?(data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):3;
+  const sectionCount=isWF?(hasSiteVaryGlobal?(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?7:6):(data.steps.filter(s=>s.riskClass==='Risk-Relevant').length>0?6:5)):data.docType==='aqem'?(data.aqemSteps.filter(s=>s.riskClass==='Risk-Relevant').length>0?8:7):3;
   const changeHist=makeChangeHist(h,changeNote,W_CS);
 
   const doc=new Document({sections:[{
