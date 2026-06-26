@@ -284,7 +284,7 @@ textarea{resize:vertical;min-height:68px;}
     <div class="fg" id="wfNameRow" style="display:none">
       <div class="field"><label class="lbl">Workflow Name <span class="req">*</span></label><input type="text" id="workflowName" placeholder="DCR with Training"></div>
       <div class="field"><label class="lbl">Site / Scope <span class="req">*</span></label>
-        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
+        <select id="site" multiple size="6" style="height:auto;min-height:110px" title="Hold Ctrl/Cmd to select multiple"><option value="Corporate">Corporate</option><option value="PG Manufacturing">PG Manufacturing</option><option value="LFC">LFC</option><option value="Brazil">Brazil</option><option value="Ireland">Ireland</option><option value="Israel">Israel</option><option value="Esseterre">Esseterre</option><option value="China">China</option><option value="Japan">Japan</option><option value="All Sites">All Sites</option></select><div style="font-size:10px;color:var(--ink-muted);margin-top:3px">Hold Ctrl / Cmd to select multiple</div>
       </div>
     </div>
     <div class="fg">
@@ -511,6 +511,10 @@ textarea{resize:vertical;min-height:68px;}
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="LFC" style="width:auto"> LFC</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Brazil" style="width:auto"> Brazil</label>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Ireland" style="width:auto"> Ireland</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Israel" style="width:auto"> Israel</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Esseterre" style="width:auto"> Esseterre</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="China" style="width:auto"> China</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:var(--surface-2);padding:4px 10px;border-radius:var(--r);border:1px solid var(--border)"><input type="checkbox" name="aqemPermSite" value="Japan" style="width:auto"> Japan</label>
           </div></div>
         <div class="field"><label class="lbl">Event Owner Eligibility</label>
           <textarea id="aqemEventOwner" rows="3" placeholder="e.g. Site: All Sites; User Group: QA Approvers, QA Managers&#10;Describe the conditional rules for who can become event owner"></textarea></div>
@@ -924,7 +928,7 @@ function clearWfImage() {
 // ── Steps ───────────────────────────────────────────────────────────────────
 function addStep(data) {
   const id=++stc;
-  const s=data||{id,num:steps.length+1,name:'',stepType:'',branch:'both',riskClass:'Risk-Relevant',
+  const s=data||{id,num:steps.length+1,name:'',stepType:'',branch:'',riskClass:'Risk-Relevant',
     assignedTo:'',reassignAuth:'',eSig:'Yes',ratPreset:'',ratCustom:'',iuvRef:'',
     variesBySite:false,siteAssignments:{},
     evidencePreset:'',evidenceCustom:'',conclusionPreset:'',conclusionCustom:'',testAction:'',expectedResult:''};
@@ -969,7 +973,7 @@ function renderStep(s) {
       </div>
       <div class="fg fg3">
         <div class="field"><label class="lbl">Branch / Scope</label>
-          <input type="text" value="${s.branch==='both'?'All paths':s.branch==='tier1'?'Tier 1 only':s.branch==='tier2'?'Tier 2 only':s.branch||''}" placeholder="e.g. All paths, Tier 1 only" oninput="updW(${s.id},'branch',this.value)"></div>
+          <input type="text" value="${s.branch||''}" placeholder="e.g. All paths, Tier 1 only" oninput="updW(${s.id},'branch',this.value)"></div>
         <div class="field"><label class="lbl">Display Number</label>
           <input type="text" value="${s.num}" oninput="updW(${s.id},'num',this.value)"></div>
         <div class="field"></div>
@@ -1492,6 +1496,7 @@ function collectData(){
       partEleven:document.getElementById('partEleven').value,
       supersedes:document.getElementById('supersedes').value,
       iuvRef2:document.getElementById('iuvRef2').value,
+      changeControl: document.getElementById('changeControl').value,
     },
     settings:settings.map(s=>({...s,ratResolved:getSRat(s)})),
     steps:steps.map(s=>({...s,ratResolved:getWRat(s),siteAssignments:s.siteAssignments||{}})),
@@ -1517,7 +1522,7 @@ function populateForm(d){
   if(d.docType){selectType(d.docType);confirmType();}
   const h=d.header||{};
   ['docNum','revision','effectiveDate','system','module','workflowName','iuvPackage',
-   'valPlan','author','gxpClass','intendedUse','esigNote','partEleven','supersedes','iuvRef2']
+   'valPlan','author','gxpClass','intendedUse','esigNote','partEleven','supersedes','iuvRef2', 'changeControl']
   .forEach(id=>{const el=document.getElementById(id);if(el&&h[id]!==undefined)el.value=h[id];});
   updateDocId();
   if(h.site)setSiteValue(h.site);
@@ -1603,7 +1608,7 @@ async function buildConfigSpec(data){
     HDR_FILL,LGRAY,BGRAY,MGRAY,thin,allThin,cm,W_CS,a,p,blank,secHdr,hc,dc,makeChangeHist}=getDocxHelpers();
   const h=data.header;
   const isWF=data.docType==='workflow';
-  const changeNote='Initial Release ('+h.docNum+')';
+  const changeNote='Initial Release ('+( h.changeControl||h.docNum)+')';
 
   let configSection=[];
 
@@ -1719,7 +1724,7 @@ async function buildConfigSpec(data){
           shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),
           children:[p(a('Step '+s.num+':   '+s.name+(s.stepType?' ('+s.stepType+')':''),{bold:true,size:18}),{after:0})]
         })]}),
-        new TableRow({children:[dc('Branch / Scope:',SW[0],LGRAY,true),dc(s.branch||'All paths',SW[1])]}),
+        new TableRow({children:[dc('Branch / Scope:',SW[0],LGRAY,true),dc(s.branch||'Main',SW[1])]}),
         ...assignRows,
         new TableRow({children:[dc('E-Signature:',SW[0],s.variesBySite?LGRAY:'F8F6FC',true),dc(s.eSig||'Yes',SW[1],s.variesBySite?'FFFFFF':LGRAY)]}),
         new TableRow({children:[dc('GxP Rationale:',SW[0],s.variesBySite?'F8F6FC':LGRAY,true),dc(s.ratResolved||'',SW[1],s.variesBySite?LGRAY:'FFFFFF')]}),
@@ -1890,7 +1895,7 @@ async function buildConfigSpec(data){
       new Table({width:{size:W_CS,type:WidthType.DXA},columnWidths:ASW,layout:TableLayoutType.FIXED,rows:[
         new TableRow({children:[new TableCell({width:{size:W_CS,type:WidthType.DXA},columnSpan:2,shading:{fill:HDR_FILL,type:ShadingType.CLEAR},borders:allThin,margins:cm(),children:[p(a('Step '+s.num+':   '+s.name+(s.stepType?' ('+s.stepType+')':''),{bold:true,size:18}),{after:0})]})]}),
         ...([
-          ['Branch / Scope:',s.branch||'All paths'],
+          ['Branch / Scope:',s.branch||'Main'],
           ['Assigned To:',s.assignedTo||''],
           ['E-Signature:',s.eSig||'Yes'],
           ['VoD Coverage:',s.vodCoverage==='custom'?(s.vodCustom||''):(s.vodCoverage||'Manual IUV')],
@@ -1991,7 +1996,7 @@ async function buildIUVPackage(data){
   const SW=[1400,8855];
 
 
-  const iuvChangeNote='Initial release – '+csRef;
+  const iuvChangeNote='Initial release – '+(h.changeControl||csRef);
   const changeHist=makeChangeHist(h,iuvChangeNote,W_IUV);
 
 
